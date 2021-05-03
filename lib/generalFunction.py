@@ -5,7 +5,7 @@ import numpy as np
 
 #ここは固定値とする
 SIGUM_MAX_ = 5
-SIGUM_MIN_ = 0.8
+SIGUM_MIN_ = 0.5
 Tau_ = 100
 
   #ガウス関数（データの次元数）
