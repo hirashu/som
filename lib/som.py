@@ -20,8 +20,9 @@ class Som():
     #定義
     #ノード座標
     node_coordinate_= self._NodeToCoordinate(self.NODE_X,self.NODE_Y)
-    #潜在空間の初期化(TODO：PCA初期化でもいいよ)
-    latent_sp_ = np.zeros((self.NODE_K, len(data[0])))
+    #潜在空間の初期化
+    #潜在空間の初期化(K X Data次元の乱数の潜在空間を作成）TODO：PCA初期化でもいいよ
+    latent_sp_ = np.random.rand(self.NODE_K, len(data[0]))
 
     # 学習を行う
     count_ =0
