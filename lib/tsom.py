@@ -3,355 +3,185 @@
 # 一次元のSOMだよ。プロト版として実装、次元数とか調整できたらいいよね
 #今回の学習データData X K X L X 1 であると仮定する
 import numpy as np
+from . import generalFunction as genFunc
+class TSom():
 
-# 定数定義
-#TODO_TSOM２用に編集する
-#NODE_K・Lとする
-NODE_KX= 1
-NODE_KY= 1
-NODE_K=1
-NODE_LX= 1
-NODE_LY= 1
-NODE_L=1
-#ここは固定値とする
-SIGUM_MAX_ = 10
-SIGUM_MIN_ = 0.6
-Tau_ = 80
+  def __init__(self,node_KX,node_KY,node_LX,node_LY):
+      # ノード設定
+      #NODE_K・Lとする
+    self.NODE_KX = node_KX
+    self.NODE_KY = node_KY
+    self.NODE_K = self.NODE_KX * self.NODE_KY
+    self.NODE_LX = node_LX
+    self.NODE_LY = node_LY
+    self.NODE_L = self.NODE_LX * self.NODE_LY
 
-# 関数化（入力データ）
-#data形式はこれ（入力データは外部からインプットする）
-#data=np.array([[-5,-5,-5],[-3,-3,-3],[0,0,0],[3,3,3],[5,5,5]])
-#print(data)
-#return　計算結果(配列)
-def TSOM2(data,node_KX,node_KY,node_LX,node_LY):
- #TODO_TSOM２用に編集する 
-  #定義
-  global NODE_KX 
-  NODE_KX = node_KX
-  global NODE_KY 
-  NODE_KY = node_KY
-  global NODE_K
-  NODE_K = NODE_KX * NODE_KY
-  global NODE_LX 
-  NODE_LX = node_LX
-  global NODE_LY 
-  NODE_LY = node_LY
-  global NODE_L
-  NODE_L = NODE_LX * NODE_LY
+  # 関数化（入力データ）
+  #data形式は以下の形式
+  #data=np.array([[-5,-5,-5],[-3,-3,-3],[0,0,0],[3,3,3],[5,5,5]])
+  #return　計算結果(配列)
+  def runTSOM2(self, data,count):
+    #ノード座標
+    nodeK_coordinate_=self.NodeToCoordinate(self.NODE_KX,self.NODE_KY)
+    nodeL_coordinate_=self.NodeToCoordinate(self.NODE_LX,self.NODE_LY)
+    #潜在空間の参照ベクトル初期化(TODO：PCA初期化でもいいよ)
+    latent_spU1_ = np.random.rand(len(data),self.NODE_L) #memoデータ数
+    latent_spU2_ = np.random.rand(self.NODE_K,len(data[0])) #memo次元のはず
+    #本来はL*N*Dであるがデータの次元が１であるためN*Lに省略
+    latent_spY_ = np.random.rand(self.NODE_K,self.NODE_L)
+    #print('latent_spY_')
+    #print(latent_spY_)
 
-  #ノード座標
-  nodeK_coordinate_=NodeToCoordinate(NODE_KX,NODE_KY)
-  nodeL_coordinate_=NodeToCoordinate(NODE_LX,NODE_LY)
-  #潜在空間の参照ベクトル初期化(TODO：PCA初期化でもいいよ)
-  latent_spU1_ = np.random.rand(len(data),NODE_L) #memoデータ数
-  latent_spU2_ = np.random.rand(NODE_K,len(data[0])) #memo次元のはず
-  #本来はL*N*Dであるがデータの次元が１であるためN*Lに省略
-  latent_spY_ = np.random.rand(NODE_K,NODE_L)
-  #print('latent_spY_')
-  #print(latent_spY_)
+    #学習の実施
+    count_ =0
+    while count_< count:
+      # 勝者決定
+      win_nodeK_ = self.WinnerNodeK(latent_spU1_,latent_spY_)
+      win_nodeL_ = self.WinnerNodeL(latent_spU2_,latent_spY_)
 
-  #学習を行う
-  count_ =0
-  while count_<250:
-    # 勝者決定
-    win_nodeK_ = WinnerNodeK(latent_spU1_,latent_spY_)
-    win_nodeL_ = WinnerNodeL(latent_spU2_,latent_spY_)
+      # 協調過程
+      learn_rate_K =self.CoordinProcess(win_nodeK_,self.NODE_K,nodeK_coordinate_,count_)
+      learn_rate_L =self.CoordinProcess(win_nodeL_,self.NODE_L,nodeL_coordinate_,count_)
 
-    # 協調過程
-    learn_rate_K =CoordinProcess(win_nodeK_,NODE_K,nodeK_coordinate_,count_)
-    learn_rate_L =CoordinProcess(win_nodeL_,NODE_L,nodeL_coordinate_,count_)
+      # 適応過程
+      learn_rate_K=self.LearnStandardization(learn_rate_K)
+      learn_rate_L=self.LearnStandardization(learn_rate_L)
+      #潜在空間の更新
+      latent_spU1_ = np.dot(data,learn_rate_L.T)
+      latent_spU2_=self.AdaptateProcessU2(learn_rate_K,data)
+      latent_spY_= np.dot(learn_rate_K,latent_spU1_)
 
-    # 適応過程
-    learn_rate_K=LearnStandardization(learn_rate_K)
-    learn_rate_L=LearnStandardization(learn_rate_L)
-    #潜在空間の更新
-    latent_spU1_ = np.dot(data,learn_rate_L.T)
-    latent_spU2_=AdaptateProcessU2(learn_rate_K,data)
-    latent_spY_= np.dot(learn_rate_K,latent_spU1_)
+      count_+=1
+      print(count_)
+    #ループ処理おわり
 
-    count_+=1
-    print(count_)
-  #ループ処理おわり
+    #学習結果の出力
+    #for n in win_nodeK_:
+    #  print('勝者ノード'+str(n)+':座標')
+    #  print(':座標' +str(nodeK_coordinate_[int(n)]))
+    print('win_nodeK_')
+    print(win_nodeK_)
+    print('win_nodeL_')
+    print(win_nodeL_)
+    return latent_spY_
 
-  #学習結果の出力
-  #for n in win_nodeK_:
-  #  print('勝者ノード'+str(n)+':座標')
-  #  print(':座標' +str(nodeK_coordinate_[int(n)]))
-  print('win_nodeK_')
-  print(win_nodeK_)
-  print('win_nodeL_')
-  print(win_nodeL_)
-  return latent_spY_
+  #ノード番号の座標を定義する関数(各ノードの配置は正方形とする)
+  #引数　ノードX:int,ノードY:int
+  #戻り値 array[ノード数(NodeX＊NodeY),[X座標,Y座標]]
+  def NodeToCoordinate(self,NodeX,NodeY):
+    map_tmp = np.zeros((NodeX*NodeY, 2))
+    for i in range(NodeY):
+      for j in range(NodeX):
+        map_tmp[i*NodeX+j]=[i,j]
+    return map_tmp
 
-#属性情報を含めたTSOM
-#sideData サイド情報はN*Nの正方行列
-#前提：学習データは次元数１である。
-#   ：属性情報の次元数は未設定
-def TSOM2sideInfo(data,node_KX,node_KY,node_LX,node_LY,sideData):
- #TODO_TSOM２用に編集する 
-  #定義
-  global NODE_KX 
-  NODE_KX = node_KX
-  global NODE_KY 
-  NODE_KY = node_KY
-  global NODE_K
-  NODE_K = NODE_KX * NODE_KY
-  global NODE_LX 
-  NODE_LX = node_LX
-  global NODE_LY 
-  NODE_LY = node_LY
-  global NODE_L
-  NODE_L = NODE_LX * NODE_LY
+  # 勝者ノード(第１ノード)の選定(競合過程)
+  # 引数 U1(N*L)、潜在空間Y(K*L)
+  # 戻り値 勝者ノード：array[データ数N]
+  def WinnerNodeK(self,latent_spU1,latent_spY):
+    winner_Kn = np.zeros(len(latent_spU1)) #len=n1
+    #データ数分勝者の算出を繰り返す
+    for indexN,data_u1 in enumerate(latent_spU1):
+      #初期値として各ノードの最初の値の差分を設定する
+      kn=0
+      dist = genFunc.Diff2Nolm(data_u1,latent_spY[0])
+      #Lノード分やるよー
+      #ノードとデータから最小の差となるノードを選択する
+      for index_k in range(NODE_K): #Lノード回の中からそれっぽいのを決める
+        tmp = genFunc.Diff2Nolm(data_u1,latent_spY[index_k])
+        if dist>tmp:
+          dist=tmp
+          kn=index_k
+      winner_Kn[indexN]=kn
+    return(winner_Kn)
 
-  #ノード座標
-  nodeK_coordinate_=NodeToCoordinate(NODE_KX,NODE_KY)
-  nodeL_coordinate_=NodeToCoordinate(NODE_LX,NODE_LY)
-  #潜在空間の参照ベクトル初期化(TODO：PCA初期化でやろう)
-  latent_spU1_ = np.random.rand(len(data),NODE_L) #memoデータ数
-  latent_spU2_ = np.random.rand(NODE_K,len(data[0])) #memo次元のはず
-  #本来はL*N*Dであるがデータの次元が１であるためN*Lに省略
-  latent_spY_ = np.random.rand(NODE_K,NODE_L)
-  #print('latent_spY_')
-  #print(latent_spY_)
-  #属性情報の潜在空間(R ∈ Node * D)を定義
-  lspYsideK_ = np.random.rand(NODE_K,len(sideData[0]))
-  lspYsideL_ = np.random.rand(NODE_L,len(sideData[0]))
+  # 勝者ノード(第２ノード)の選定(競合過程)
+  # 引数 学習データ(L*Data数)、潜在空間
+  # 戻り値 勝者ノード：array[データ次元数]
+  def WinnerNodeL(self,latent_spU2,latent_spY):
+    winner_Ln = np.zeros(len(latent_spU2[0]))
+    latent_spU2T=latent_spU2.T
+    latent_spYT=latent_spY.T
+    for indexN,data_n in enumerate(latent_spU2T):
+      #初期値として各ノードの最初の値の差分を設定する
+      kn=0
+      dist = genFunc.Diff2Nolm(data_n,latent_spYT[0])
+      #ノードとデータから最小の差となるノードを選択する
+      for index_l in range(NODE_L): #インデックスと値の両方取れる
+        tmp = genFunc.Diff2Nolm(data_n,latent_spYT[index_l])
+        if dist>tmp:
+          dist=tmp
+          kn=index_l
+      winner_Ln[indexN]=kn
+    return(winner_Ln)
 
-  #学習を行う
-  count_ =0
-  while count_<250:
-    # 勝者決定
-    win_nodeK_ = WinnerNodeK_sideInfo(latent_spU1_,latent_spY_,sideData,lspYsideK_)
-    #print('win_nodeK_')
-    #print(win_nodeK_)
-    win_nodeL_ = WinnerNodeL_sideInfo(latent_spU2_,latent_spY_,sideData,lspYsideL_)
-    #print('win_nodeL_')
-    #print(win_nodeL_)
-    #print(win_node_)
-    # 協調過程
-    learn_rate_K =CoordinProcess(win_nodeK_,NODE_K,nodeK_coordinate_,count_)
-    #print('learn_rate_K')
-    #print(learn_rate_K)
+  #TODO_TSOM２用に編集
+  # 協調過程（ノードと学習データとの学習割合を求める）
+  # 引数:勝者ノード、潜在空間のノード値、潜在空間の座標(ノード数)、カウント
+  # 戻り値　学習割合(全ノード X 入力データ数(勝者数))
+  def CoordinProcess(self,winner_n,Node,node_sp,count):
+    # 初期化
+    Ykn_Ret = np.zeros((Node, len(winner_n))) #学習率(潜在空間 X データ数)
+    sigma =genFunc.SigmaCalac(count)
+    
+    for index in range(Node):
+        for index_N,win_n in enumerate(winner_n): #winner_Kn：勝者 
+          #参照ベクトル[ノードK,ノードN]＝ガウス（潜在空間ノードkの位置：潜在空間(勝者の位置)、シグマ）
+          Ykn_Ret[index,index_N]= genFunc.Gauss(node_sp[index],node_sp[int(win_n)],sigma)
+          #課題ノードをインデックスで管理する　or 配列で整理する
+    return Ykn_Ret
 
-    learn_rate_L =CoordinProcess(win_nodeL_,NODE_L,nodeL_coordinate_,count_)
-    #print('learn_rate_L')
-    #print(learn_rate_L)
+  #学習量の標準化
+  # 引数 :学習割合標準化前R[Node＊win_N]
+  # 引数 :学習割合R[Node＊win_N]
+  def LearnStandardization(self,LearningValue):
+    #標準化を行うため行毎の和を求めて、逆数を計算する
+    Yk_Rec = np.zeros(len(LearningValue))#学習量の逆数(潜在空間)
+    Yk_Rec=np.sum(LearningValue, axis=1)
+    Yk_Rec=np.reciprocal(Yk_Rec)
+    
+    #各ノードの学習割合の標準化
+    for indexNode in range(len(LearningValue)):
+      LearningValue[indexNode]=Yk_Rec[indexNode]*LearningValue[indexNode,:]
+    return LearningValue
 
-    # 適応過程
-    #各ノードの学習率を求める
-    learn_rate_K=LearnStandardization(learn_rate_K)
-    learn_rate_L=LearnStandardization(learn_rate_L)
-    #潜在空間の更新
-    latent_spU1_ = np.dot(data,learn_rate_L.T)
-    #print('latent_spU1_')
-    #print(latent_spU1_)
-    #latent_spU2_ = np.dot(learn_rate_K,data)
-    latent_spU2_=AdaptateProcessU2(learn_rate_K,data)
-    #print('latent_spU2_')
-    #print(latent_spU2_)
-    latent_spY_= np.dot(learn_rate_K,latent_spU1_)
+  # 適応過程
+  # 引数 :学習割合R[Node＊win_N]、入力データ
+  # 戻り値 :モデルの学習結果(潜在空間：ノードLorK X データ次元)
+  def AdaptateProcessU1(self,CPretR_node_winN,in_data):
+    #標準化を行うため行毎の和を求めて、逆数を計算する
+    Yk_Rec = np.zeros(len(CPretR_node_winN))#学習量の逆数(潜在空間)
+    Yk_Rec=np.sum(CPretR_node_winN, axis=1)
+    Yk_Rec=np.reciprocal(Yk_Rec)
+    
+    #各ノードの学習割合の標準化
+    for indexNode in range(len(CPretR_node_winN)):
+      CPretR_node_winN[indexNode]=Yk_Rec[indexNode]*CPretR_node_winN[indexNode,:]
+    return np.dot(in_data,CPretR_node_winN.T)
 
-    #潜在空間（属性情報）の更新
-    lspYsideK_= np.dot(learn_rate_K,sideData)
-    lspYsideL_= np.dot(learn_rate_L,sideData)
-    count_+=1
-    print(count_)
-  #ループ処理おわり
-
-  #学習結果の出力
-  #for n in win_nodeK_:
-  #  print('勝者ノード'+str(n)+':座標')
-  #  print(':座標' +str(nodeK_coordinate_[int(n)]))
-  print('win_nodeK_縦方向')
-  print(win_nodeK_)
-  print('win_nodeL_横方向')
-  print(win_nodeL_)
-  return latent_spY_
-
-# ２乗誤差を算出するメソッド(入力データの次元数は同じ)
-# 引数：データ１、データ２
-# 戻り値　２乗距離
-def Diff2Nolm(position1,position2):
-  tmp=0
-  for el in range(len(position1)):
-    #print(el)
-    tmp += np.square(position1[el]-position2[el])
-  return np.sqrt(tmp) 
-
-#ガウス関数（データの次元数）
-#引数 (座標１,座標２,近傍半径)
-#戻り値　float
-def Gauss(position1,position2,sigma):
-  return np.exp(-Diff2Nolm(position1,position2)/(2*sigma**2))
-
-#シグマの計算式(非線形に計算する)　
-#引数　(ステップ数)
-#戻り値　float
-def SigmaCalac(time):
-  sigma_= SIGUM_MAX_ * np.exp(-time/Tau_)
-  return sigma_ if SIGUM_MIN_ < sigma_ else SIGUM_MIN_
-
-#ノード番号の座標を定義する関数(各ノードの配置は正方形とする)
-#引数　ノードX:int,ノードY:int
-#戻り値 array[ノード数(NodeX＊NodeY),[X座標,Y座標]]
-def NodeToCoordinate(NodeX,NodeY):
-  map_tmp = np.zeros((NodeX*NodeY, 2))
-  for i in range(NodeY):
-    for j in range(NodeX):
-      map_tmp[i*NodeX+j]=[i,j]
-  return map_tmp
-
-# 勝者ノード(第１ノード)の選定(競合過程)
-# 引数 U1(N*L)、潜在空間Y(K*L)
-# 戻り値 勝者ノード：array[データ数N]
-def WinnerNodeK(latent_spU1,latent_spY):
-  winner_Kn = np.zeros(len(latent_spU1)) #len=n1
-  #データ数分勝者の算出を繰り返す
-  for indexN,data_u1 in enumerate(latent_spU1):
-    #初期値として各ノードの最初の値の差分を設定する
-    kn=0
-    dist = Diff2Nolm(data_u1,latent_spY[0])
-    #Lノード分やるよー
-    #ノードとデータから最小の差となるノードを選択する
-    for index_k in range(NODE_K): #Lノード回の中からそれっぽいのを決める
-      tmp = Diff2Nolm(data_u1,latent_spY[index_k])
-      if dist>tmp:
-        dist=tmp
-        kn=index_k
-    winner_Kn[indexN]=kn
-  return(winner_Kn)
-
-# 勝者ノード(第２ノード)の選定(競合過程)
-# 引数 学習データ(L*Data数)、潜在空間
-# 戻り値 勝者ノード：array[データ次元数]
-def WinnerNodeL(latent_spU2,latent_spY):
-  winner_Ln = np.zeros(len(latent_spU2[0]))
-  latent_spU2T=latent_spU2.T
-  latent_spYT=latent_spY.T
-  for indexN,data_n in enumerate(latent_spU2T):
-    #初期値として各ノードの最初の値の差分を設定する
-    kn=0
-    dist = Diff2Nolm(data_n,latent_spYT[0])
-    #ノードとデータから最小の差となるノードを選択する
-    for index_l in range(NODE_L): #インデックスと値の両方取れる
-      tmp = Diff2Nolm(data_n,latent_spYT[index_l])
-      if dist>tmp:
-        dist=tmp
-        kn=index_l
-    winner_Ln[indexN]=kn
-  return(winner_Ln)
-
-# 勝者ノード(第１ノード)の選定_属性情報を含む(競合過程)
-# 引数 U1(N*L)、潜在空間Y(K*L)、属性情報(N*D)、属性情報の潜在空間(K*D)
-# 戻り値 勝者ノード：array[データ数N]
-def WinnerNodeK_sideInfo(latent_spU1,latent_spY,input_Data,lspYsideK):
-  winner_Kn = np.zeros(len(latent_spU1)) #len=n1
-  #データ数分勝者の算出を繰り返す
-  for indexN,data_u1 in enumerate(latent_spU1):
-    #初期値として各ノードの最初の値の差分を設定する
-    kn=0
-    dist = Diff2Nolm(data_u1,latent_spY[0])+Diff2Nolm(input_Data[0],lspYsideK[0])
-    #Lノード分やるよー
-    #ノードとデータから最小の差となるノードを選択する
-    for index_k in range(NODE_K): #Lノード回の中からそれっぽいのを決める
-      tmpY = Diff2Nolm(data_u1,latent_spY[index_k])
-      tmpSide = Diff2Nolm(input_Data[indexN],lspYsideK[index_k])
-      tmp = tmpY+ tmpSide
-      if dist>tmp:
-        dist=tmp
-        kn=index_k
-    winner_Kn[indexN]=kn
-  return(winner_Kn)
-
-# 勝者ノード(第２ノード)の選定_属性情報を含む(競合過程)
-# 引数 学習データ(L*Data数)、潜在空間、属性情報(N*D)、属性情報の潜在空間(K*D)
-# 戻り値 勝者ノード：array[データ次元数]
-def WinnerNodeL_sideInfo(latent_spU2,latent_spY,input_Data,lspYsideL):
-  winner_Ln = np.zeros(len(latent_spU2[0]))
-  latent_spU2T=latent_spU2.T
-  latent_spYT=latent_spY.T
-  for indexN,data_n in enumerate(latent_spU2T):
-    #初期値として各ノードの最初の値の差分を設定する
-    kn=0
-    dist = Diff2Nolm(data_n,latent_spYT[0])+Diff2Nolm(input_Data[0],lspYsideL[0])
-    #ノードとデータから最小の差となるノードを選択する
-    for index_l in range(NODE_L): #インデックスと値の両方取れる
-      tmpY = Diff2Nolm(data_n,latent_spYT[index_l])
-      tmpSide = Diff2Nolm(input_Data[indexN],lspYsideL[index_l])
-      tmp =tmpY +tmpSide 
-      if dist>tmp:
-        dist=tmp
-        kn=index_l
-    winner_Ln[indexN]=kn
-  return(winner_Ln)
-
-#TODO_TSOM２用に編集
-# 協調過程（ノードと学習データとの学習割合を求める）
-# 引数:勝者ノード、潜在空間のノード値、潜在空間の座標(ノード数)、カウント
-# 戻り値　学習割合(全ノード X 入力データ数(勝者数))
-def CoordinProcess(winner_n,Node,node_sp,count):
-  # 初期化
-  Ykn_Ret = np.zeros((Node, len(winner_n))) #学習率(潜在空間 X データ数)
-  sigma =SigmaCalac(count)
+  # 適応過程
+  # 引数 :学習割合R[Node＊win_N]、入力データ
+  # 戻り値 :モデルの学習結果(潜在空間：ノードLorK X データ次元)
+  def AdaptateProcessU2(self,CPretR_node_winN,in_data):
+    #標準化を行うため行毎の和を求めて、逆数を計算する
+    Yk_Rec = np.zeros(len(CPretR_node_winN))#学習量の逆数(潜在空間)
+    Yk_Rec=np.sum(CPretR_node_winN, axis=1)
+    Yk_Rec=np.reciprocal(Yk_Rec)
+    #各ノードの学習割合の標準化
+    for indexNode in range(len(CPretR_node_winN)):
+      CPretR_node_winN[indexNode]=Yk_Rec[indexNode]*CPretR_node_winN[indexNode,:]
+    return np.dot(CPretR_node_winN,in_data)
   
-  for index in range(Node):
-      for index_N,win_n in enumerate(winner_n): #winner_Kn：勝者 
-        #参照ベクトル[ノードK,ノードN]＝ガウス（潜在空間ノードkの位置：潜在空間(勝者の位置)、シグマ）
-        Ykn_Ret[index,index_N]= Gauss(node_sp[index],node_sp[int(win_n)],sigma)
-        #課題ノードをインデックスで管理する　or 配列で整理する
-  return Ykn_Ret
-
-#学習量の標準化
-# 引数 :学習割合標準化前R[Node＊win_N]
-# 引数 :学習割合R[Node＊win_N]
-def LearnStandardization(LearningValue):
-  #標準化を行うため行毎の和を求めて、逆数を計算する
-  Yk_Rec = np.zeros(len(LearningValue))#学習量の逆数(潜在空間)
-  Yk_Rec=np.sum(LearningValue, axis=1)
-  Yk_Rec=np.reciprocal(Yk_Rec)
+  # 適応過程
+  # 引数 :学習割合R[Node＊win_N]、入力データ
+  # 戻り値 :モデルの学習結果(潜在空間：ノードLorK X データ次元)
+  def AdaptateProcessY(self,CPretR_node_winN,CPretR_nodeL_winN,in_data):
+    #標準化を行うため行毎の和を求めて、逆数を計算する
+    Yk_Rec = np.zeros(len(CPretR_node_winN))#学習量の逆数(潜在空間)
+    Yk_Rec=np.sum(CPretR_node_winN, axis=1)
+    Yk_Rec=np.reciprocal(Yk_Rec)
+    #各ノードの学習割合の標準化
+    for indexNode in range(len(CPretR_node_winN)):
+      CPretR_node_winN[indexNode]=Yk_Rec[indexNode]*CPretR_node_winN[indexNode,:]
+    return np.dot(CPretR_node_winN,in_data)
   
-  #各ノードの学習割合の標準化
-  for indexNode in range(len(LearningValue)):
-    LearningValue[indexNode]=Yk_Rec[indexNode]*LearningValue[indexNode,:]
-  return LearningValue
-
-# 適応過程
-# 引数 :学習割合R[Node＊win_N]、入力データ
-# 戻り値 :モデルの学習結果(潜在空間：ノードLorK X データ次元)
-def AdaptateProcessU1(CPretR_node_winN,in_data):
-  #標準化を行うため行毎の和を求めて、逆数を計算する
-  Yk_Rec = np.zeros(len(CPretR_node_winN))#学習量の逆数(潜在空間)
-  Yk_Rec=np.sum(CPretR_node_winN, axis=1)
-  Yk_Rec=np.reciprocal(Yk_Rec)
-  
-  #各ノードの学習割合の標準化
-  for indexNode in range(len(CPretR_node_winN)):
-    CPretR_node_winN[indexNode]=Yk_Rec[indexNode]*CPretR_node_winN[indexNode,:]
-  return np.dot(in_data,CPretR_node_winN.T)
-
-# 適応過程
-# 引数 :学習割合R[Node＊win_N]、入力データ
-# 戻り値 :モデルの学習結果(潜在空間：ノードLorK X データ次元)
-def AdaptateProcessU2(CPretR_node_winN,in_data):
-  #標準化を行うため行毎の和を求めて、逆数を計算する
-  Yk_Rec = np.zeros(len(CPretR_node_winN))#学習量の逆数(潜在空間)
-  Yk_Rec=np.sum(CPretR_node_winN, axis=1)
-  Yk_Rec=np.reciprocal(Yk_Rec)
-  #各ノードの学習割合の標準化
-  for indexNode in range(len(CPretR_node_winN)):
-    CPretR_node_winN[indexNode]=Yk_Rec[indexNode]*CPretR_node_winN[indexNode,:]
-  return np.dot(CPretR_node_winN,in_data)
- 
-# 適応過程
-# 引数 :学習割合R[Node＊win_N]、入力データ
-# 戻り値 :モデルの学習結果(潜在空間：ノードLorK X データ次元)
-def AdaptateProcessY(CPretR_node_winN,CPretR_nodeL_winN,in_data):
-  #標準化を行うため行毎の和を求めて、逆数を計算する
-  Yk_Rec = np.zeros(len(CPretR_node_winN))#学習量の逆数(潜在空間)
-  Yk_Rec=np.sum(CPretR_node_winN, axis=1)
-  Yk_Rec=np.reciprocal(Yk_Rec)
-  #各ノードの学習割合の標準化
-  for indexNode in range(len(CPretR_node_winN)):
-    CPretR_node_winN[indexNode]=Yk_Rec[indexNode]*CPretR_node_winN[indexNode,:]
-  return np.dot(CPretR_node_winN,in_data)
- 
