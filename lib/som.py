@@ -17,7 +17,6 @@ class Som():
     self.NODE_K = self.NODE_X * self.NODE_Y
 
   def runSOM(self,data,count):
-    #定義
     #ノード座標
     node_coordinate_= self._NodeToCoordinate(self.NODE_X,self.NODE_Y)
     #潜在空間の初期化
