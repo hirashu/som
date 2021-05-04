@@ -47,7 +47,7 @@ class TSom():
       learn_rate_K=self.LearnStandardization(learn_rate_K)
       learn_rate_L=self.LearnStandardization(learn_rate_L)
       #潜在空間の更新
-      latent_spU1_ = np.dot(data,learn_rate_L.T)
+      latent_spU1_ = self.AdaptateProcessU1(data,learn_rate_L.T)
       latent_spU2_=self.AdaptateProcessU2(learn_rate_K,data)
       latent_spY_= np.dot(learn_rate_K,latent_spU1_)
 
@@ -87,7 +87,7 @@ class TSom():
       dist = genFunc.Diff2Nolm(data_u1,latent_spY[0])
       #Lノード分やるよー
       #ノードとデータから最小の差となるノードを選択する
-      for index_k in range(NODE_K): #Lノード回の中からそれっぽいのを決める
+      for index_k in range(self.NODE_K): #Lノード回の中からそれっぽいのを決める
         tmp = genFunc.Diff2Nolm(data_u1,latent_spY[index_k])
         if dist>tmp:
           dist=tmp
@@ -107,7 +107,7 @@ class TSom():
       kn=0
       dist = genFunc.Diff2Nolm(data_n,latent_spYT[0])
       #ノードとデータから最小の差となるノードを選択する
-      for index_l in range(NODE_L): #インデックスと値の両方取れる
+      for index_l in range(self.NODE_L): #インデックスと値の両方取れる
         tmp = genFunc.Diff2Nolm(data_n,latent_spYT[index_l])
         if dist>tmp:
           dist=tmp
