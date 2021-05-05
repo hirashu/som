@@ -21,7 +21,7 @@ def SigmaCalac(time):
   sigma_= SIGUM_MAX_ * np.exp(-time/Tau_)
   return sigma_ if SIGUM_MIN_ < sigma_ else SIGUM_MIN_
 
-# ２乗誤差を算出するメソッド(入力データの次元数は同じ)
+# ２乗誤差を算出するメソッド(次元数：２次元)
 # 引数：データ１、データ２
 # 戻り値　２乗距離
 def Diff2Nolm(position1,position2):
@@ -29,4 +29,19 @@ def Diff2Nolm(position1,position2):
   for el in range(len(position1)):
     #print(el)
     tmp += np.square(position1[el]-position2[el])
+  return np.sqrt(tmp)
+
+def Diff2Nolm3D(position1,position2):
+  """
+  勝者ノード(第１ノード)の選定(競合過程)を行う。勝者ノードとはデータから選出されたノードのことである。
+  @param position1  データ１[M*D]
+  @param position2  データ２[M*D]
+  @return ２乗距離（スカラー）
+  """
+  print(position1)
+  print(position2)
+  tmp=0
+  for el1 in range(len(position1)):
+    for el2 in range(len(position1[el1])):
+      tmp += np.square(position1[el1][el2]-position2[el1][el2])
   return np.sqrt(tmp) 
