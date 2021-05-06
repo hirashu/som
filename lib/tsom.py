@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # 上は日本語を記載するために必要なおまじない
-# 一次元のSOMだよ。プロト版として実装、次元数とか調整できたらいいよね
-#今回の学習データData X K X L X 1 であると仮定する
+# ３次元配列対応のTSom
 import numpy as np
 from . import generalFunction as genFunc
 class TSom():
@@ -161,7 +160,7 @@ class TSom():
     return LearningValue
 
   def AdaptateProcessU1(self,CPretR_node_winN,in_data):
-    """ todo 以降組み直し
+    """
     適応過程U1
     @param CPretR_node_winN 標準化学習割合(第2ノード数(L) * 学習データの第２次元のデータ数(M))
     @param in_data          学習データ(N *M * D)

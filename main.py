@@ -49,7 +49,7 @@ data_kura=np.array([
 #ret = som.runSOM(data, 300)
 #print("学習結果\n"+str(ret))
 
-tsom = lib.tsom.TSom(NODE_KX,NODE_KY,NODE_LX,NODE_LY)
+tsom = lib.tsom2sideInfo.TSomSideInfo(NODE_KX,NODE_KY,NODE_LX,NODE_LY)
 ret = tsom.runTSOM2(data_kura, COUNT)
 print("学習結果\n"+str(ret))
 print("勝者ノードK\n")
