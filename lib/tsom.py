@@ -44,17 +44,13 @@ class TSom():
     #学習の実施
     count_ =0
     while count_< count:
-      print("latent_spU1_")
-      print(latent_spU1_)
-      print("latent_spY_")
-      print(latent_spY_)
       # 勝者決定
-      win_nodeK_ = self.WinnerNodeK(latent_spU1_,latent_spY_)
-      win_nodeL_ = self.WinnerNodeL(latent_spU2_,latent_spY_)
+      self.win_nodeK = self.WinnerNodeK(latent_spU1_,latent_spY_)
+      self.win_nodeL = self.WinnerNodeL(latent_spU2_,latent_spY_)
 
       # 協調過程
-      learn_rate_K =self.CoordinProcess(win_nodeK_,self.NODE_K,nodeK_coordinate_,count_)
-      learn_rate_L =self.CoordinProcess(win_nodeL_,self.NODE_L,nodeL_coordinate_,count_)
+      learn_rate_K =self.CoordinProcess(self.win_nodeK,self.NODE_K,nodeK_coordinate_,count_)
+      learn_rate_L =self.CoordinProcess(self.win_nodeL,self.NODE_L,nodeL_coordinate_,count_)
 
       learn_rate_K=self.LearnStandardization(learn_rate_K)
       learn_rate_L=self.LearnStandardization(learn_rate_L)
@@ -97,8 +93,6 @@ class TSom():
       #ノードとデータから最小の差となるノードを選択する
       for index_k in range(self.NODE_K): #Lノード回の中からそれっぽいのを決める
         tmp = genFunc.Diff2Nolm3D(data_u1,latent_spY[index_k])
-        print("tmp")
-        print(tmp)
         if dist>=tmp:
           dist=tmp
           kn=index_k
@@ -119,14 +113,15 @@ class TSom():
     for index in range(len(latent_spU2[0])):
       #初期値として各ノードの最初の値の差分を設定する
       kn=0
-      dist = genFunc.Diff2Nolm3D(latent_spU2[:,index],latent_spY[0])
+      dist = genFunc.Diff2Nolm3D(latent_spU2[:,index],latent_spY[:,0])
       #ノードとデータから最小の差となるノードを選択する
       for index_l in range(self.NODE_L): #インデックスと値の両方取れる
-        tmp = genFunc.Diff2Nolm3D(latent_spU2[:,index],latent_spY[index_l])
+        tmp = genFunc.Diff2Nolm3D(latent_spU2[:,index],latent_spY[:,index_l])
         if dist>tmp:
           dist=tmp
           kn=index_l
       winner_Lm[index]=kn
+
     return(winner_Lm)
 
   def CoordinProcess(self,winner_n,Node,node_sp,count):
@@ -173,7 +168,7 @@ class TSom():
     @return モデルU1の学習結果(学習データの第１次元(N) * 潜在空間の第2ノード数(L) * データ次元(D))
     """
     # 標準化を行うため行毎の和を求めて、逆数を計算する
-    Yk_Rec=np.sum(CPretR_node_winN.T, axis=1)
+    Yk_Rec=np.sum(CPretR_node_winN, axis=1)
     Yk_Rec=np.reciprocal(Yk_Rec)
     # 各ノードの学習割合の標準化
     # CPretR_node_winN (第2ノード数(L) * 学習データの第２次元のデータ数(M))

@@ -4,7 +4,7 @@
 import numpy as np
 
 #ここは固定値とする
-SIGUM_MAX_ = 5
+SIGUM_MAX_ = 10
 SIGUM_MIN_ = 0.5
 Tau_ = 100
 
@@ -38,8 +38,6 @@ def Diff2Nolm3D(position1,position2):
   @param position2  データ２[M*D]
   @return ２乗距離（スカラー）
   """
-  print(position1)
-  print(position2)
   tmp=0
   for el1 in range(len(position1)):
     for el2 in range(len(position1[el1])):

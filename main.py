@@ -6,12 +6,13 @@ import lib
 import json
 
 # 定数定義
+COUNT =300
 #SOM用
 NODE_X = 10
 NODE_Y = 1
 
 #TSOM用
-NODE_KX = 10
+NODE_KX = 10 #エラーとなる
 NODE_KY = 1
 NODE_LX = 10
 NODE_LY = 1
@@ -49,5 +50,9 @@ data_kura=np.array([
 #print("学習結果\n"+str(ret))
 
 tsom = lib.tsom.TSom(NODE_KX,NODE_KY,NODE_LX,NODE_LY)
-ret = tsom.runTSOM2(data_kura, 2)
+ret = tsom.runTSOM2(data_kura, COUNT)
 print("学習結果\n"+str(ret))
+print("勝者ノードK\n")
+print(tsom.win_nodeK)
+print("勝者ノードL\n")
+print(tsom.win_nodeL)
