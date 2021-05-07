@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # 上は日本語を記載するために必要なおまじない
-# 一次元のSOMだよ。プロト版として実装、次元数とか調整できたらいいよね
-#今回の学習データData X K X L X 1 であると仮定する
+# ３次元配列対応のTSom
 import numpy as np
 from . import generalFunction as genFunc
 class TSom():
@@ -57,8 +56,8 @@ class TSom():
       
       # 適応過程
       # 潜在空間の更新
-      latent_spU1_ = self.AdaptateProcessU1(learn_rate_L,data)
-      latent_spU2_=self.AdaptateProcessU2(learn_rate_K,data)
+      latent_spU1_ = self.AdaptateProcessU1(learn_rate_L,data) #FIXME ワンチャン行けそう.多分無理
+      latent_spU2_=self.AdaptateProcessU2(learn_rate_K,data) #FIXME ワンチャン行けそう.多分無理
       latent_spY_= np.dot(latent_spU1_.T,learn_rate_K.T).T #[K*N]*[N*L*D]
       count_+=1
       print(count_)
@@ -109,18 +108,17 @@ class TSom():
     """
     #ここの処理が正しいか確認する
     winner_Lm = np.zeros(len(latent_spU2[0]))
-    #何と何の二乗誤差を求めたい？？
     for index in range(len(latent_spU2[0])):
       #初期値として各ノードの最初の値の差分を設定する
-      kn=0
+      lm = 0
       dist = genFunc.Diff2Nolm3D(latent_spU2[:,index],latent_spY[:,0])
       #ノードとデータから最小の差となるノードを選択する
       for index_l in range(self.NODE_L): #インデックスと値の両方取れる
         tmp = genFunc.Diff2Nolm3D(latent_spU2[:,index],latent_spY[:,index_l])
         if dist>tmp:
-          dist=tmp
-          kn=index_l
-      winner_Lm[index]=kn
+          dist = tmp
+          lm = index_l
+      winner_Lm[index] = lm
 
     return(winner_Lm)
 
@@ -161,7 +159,7 @@ class TSom():
     return LearningValue
 
   def AdaptateProcessU1(self,CPretR_node_winN,in_data):
-    """ todo 以降組み直し
+    """
     適応過程U1
     @param CPretR_node_winN 標準化学習割合(第2ノード数(L) * 学習データの第２次元のデータ数(M))
     @param in_data          学習データ(N *M * D)
