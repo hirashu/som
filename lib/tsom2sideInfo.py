@@ -10,8 +10,8 @@ from . import tsom
 TODO
 以下の3つを行い再度情報を扱えるようにする
 0.不要な継承メソッドを削除する //完了
-1.サイド情報用の潜在空間を作成
-2. 勝者ノードの選出でサイド情報も扱う
+1.サイド情報用の潜在空間を作成 //OK
+2. 勝者ノードの選出でサイド情報も扱う //OK
 3.サイド情報の潜在空間を更新する
 """
 class TSomSideInfo(tsom.TSom):
@@ -25,14 +25,17 @@ class TSomSideInfo(tsom.TSom):
   # データ：[チーム * 編成キャラ *　キャラクターパラメータ ]
   """
 
-  def runTSOM2SideInfo(self, data, sideData, count):
+  def runTSOM2SideInfo(self, data, sideDataNodeK, sideDataNodeL, count):
     """
+    プリコネ用入力データ(再度情報)のデータ構造を設定
     TSOM2の学習の実行(３次元配列のTSOM)
     @param data   学習データ(N * M * D)
-    サンプル data=np.array([[-5,-5,-5],[-3,-3,-3],[0,0,0],[3,3,3],[5,5,5]])
+    サンプル data=np.array([[[-5,-5,-5],[-3,-3,-3],[0,0,0],[3,3,3],[5,5,5]],
+                           [[-5,-5,-5],[-3,-3,-3],[0,0,0],[3,3,3],[5,5,5]]])
     @param sideDataNodeK  サイド情報_ノードK側(N * D_sid)
     @param sideDataNodeL  サイド情報_ノードL側(M * D_sid)
-    サンプル TODO 記載する　
+    サンプル data=np.array([[[-5,-5,-5],[-3,-3,-3],[0,0,0],[3,3,3],[5,5,5]],
+                          [-5,-5,-5],[-3,-3,-3],[0,0,0],[3,3,3],[5,5,5]]]) 
     @param count  学習数
     return　計算結果(K * L * D)
     """
@@ -48,16 +51,17 @@ class TSomSideInfo(tsom.TSom):
     # 潜在空間Yの初期化 [K*L*D]
     latent_spY_ = np.random.rand(self.NODE_K,self.NODE_L,data_D)
 
-    #属性情報の潜在空間(R ∈ Node * D)を定義  TODO:追加項目
-    lspYsideK_ = np.random.rand(self.NODE_K,len(sideData[0]))
-    lspYsideL_ = np.random.rand(self.NODE_L,len(sideData[0]))
+    # 属性情報の潜在空間(ノードK)の初期化 [K*Dm*D]
+    lspYsideK_ = np.random.rand(self.NODE_K,len(sideDataNodeK[0]),len(sideDataNodeK[0,0]))
+    # 属性情報の潜在空間(ノードL)の初期化 [L*Dm*D]
+    lspYsideL_ = np.random.rand(self.NODE_L,len(sideDataNodeL[0]),len(sideDataNodeL[0,0]))
 
     #学習の実施
     count_ =0
     while count_< count:
       # 勝者決定
-      self.win_nodeK = self.WinnerNodeK(latent_spU1_,latent_spY_)
-      self.win_nodeL = self.WinnerNodeL(latent_spU2_,latent_spY_)
+      self.win_nodeK = self.WinnerNodeK_sideInfo(latent_spU1_,latent_spY_,sideDataNodeK,lspYsideK_)
+      self.win_nodeL = self.WinnerNodeL_sideInfo(latent_spU2_,latent_spY_,sideDataNodeL,lspYsideL_)
 
       # 協調過程
       learn_rate_K =self.CoordinProcess(self.win_nodeK,self.NODE_K,nodeK_coordinate_,count_)
@@ -93,7 +97,6 @@ class TSomSideInfo(tsom.TSom):
       #初期値として各ノードの最初の値の差分を設定する
       kn=0
       dist = genFunc.Diff2Nolm3D(data_u1,latent_spY[0])
-      #Lノード分やるよー
       #ノードとデータから最小の差となるノードを選択する
       for index_k in range(self.NODE_K): #Lノード回の中からそれっぽいのを決める
         tmp = genFunc.Diff2Nolm3D(data_u1,latent_spY[index_k])
@@ -111,9 +114,7 @@ class TSomSideInfo(tsom.TSom):
     @param latent_spY   潜在空間Y(K*L*D)
     @return 勝者ノード    array[第2次元のデータ数(M)]
     """
-    #ここの処理が正しいか確認する
     winner_Lm = np.zeros(len(latent_spU2[0]))
-    #何と何の二乗誤差を求めたい？？
     for index in range(len(latent_spU2[0])):
       #初期値として各ノードの最初の値の差分を設定する
       kn=0
@@ -128,46 +129,61 @@ class TSomSideInfo(tsom.TSom):
 
     return(winner_Lm)
 
-  # 勝者ノード(第１ノード)の選定_属性情報を含む(競合過程)
-  # 引数 U1(N*L)、潜在空間Y(K*L)、属性情報(N*D)、属性情報の潜在空間(K*D)
-  # 戻り値 勝者ノード：array[データ数N]
-  def WinnerNodeK_sideInfo(self,latent_spU1,latent_spY,input_Data,lspYsideK):
-    winner_Kn = np.zeros(len(latent_spU1)) #len=n1
+  def WinnerNodeK_sideInfo(self,latent_spU1,latent_spY,sideDataNodeK,lspYsideK):
+    """
+    サイド情報を用いて勝者ノード(第１ノード)の選定(競合過程)を行う。
+    @param latent_spU1    U1(N*L*D)
+    @param latent_spY     潜在空間Y(K*L*D)
+    @param sideDataNodeK  属性情報(N*D:正確には(N * D_member_count *D_member_info))
+    @param lspYsideK      属性情報の潜在空間(K*D:正確には(K * D_member_count *D_member_info))
+    @return 勝者ノード      array[第１次元のデータ数(N)]
+    """
+    winner_Kn = np.zeros(len(latent_spU1))
     #データ数分勝者の算出を繰り返す
     for indexN,data_u1 in enumerate(latent_spU1):
       #初期値として各ノードの最初の値の差分を設定する
       kn=0
-      dist = genFunc.Diff2Nolm(data_u1,latent_spY[0])+genFunc.Diff2Nolm(input_Data[0],lspYsideK[0])
-      #Lノード分やるよー
+      dist = genFunc.Diff2Nolm3D(data_u1,latent_spY[0])
+      mpSide = genFunc.Diff2Nolm3D(sideDataNodeK[0],lspYsideK[0])
+      dist = dist+ tmpSide
       #ノードとデータから最小の差となるノードを選択する
-      for index_k in range(self.NODE_K): #Lノード回の中からそれっぽいのを決める
-        tmpY = genFunc.Diff2Nolm(data_u1,latent_spY[index_k])
-        tmpSide = genFunc.Diff2Nolm(input_Data[indexN],lspYsideK[index_k])
+      for index_k in range(self.NODE_K):
+        tmpY = genFunc.Diff2Nolm3D(data_u1,latent_spY[index_k])
+        tmpSide = genFunc.Diff2Nolm3D(sideDataNodeK[index_k],lspYsideK[index_k])
         tmp = tmpY+ tmpSide
-        if dist>tmp:
+        if dist>=tmp:
           dist=tmp
           kn=index_k
       winner_Kn[indexN]=kn
+
     return(winner_Kn)
 
-  # 勝者ノード(第２ノード)の選定_属性情報を含む(競合過程)
-  # 引数 学習データ(L*Data数)、潜在空間、属性情報(N*D)、属性情報の潜在空間(K*D)
-  # 戻り値 勝者ノード：array[データ次元数]
-  def WinnerNodeL_sideInfo(self,latent_spU2,latent_spY,input_Data,lspYsideL):
-    winner_Ln = np.zeros(len(latent_spU2[0]))
-    latent_spU2T=latent_spU2.T
-    latent_spYT=latent_spY.T
-    for indexN,data_n in enumerate(latent_spU2T):
+  def WinnerNodeL_sideInfo(self,latent_spU2,latent_spY,sideDataNodeL,lspYsideL):
+    """
+    サイド情報を用いて勝者ノード(第２ノード)の選定(競合過程)を行う。
+    @param latent_spU2  U2(K*M*D)
+    @param latent_spY   潜在空間Y(K*L*D)
+    @param sideDataNodeL  属性情報(M*D:正確には(M * D_member_count *D_member_info))
+    @param lspYsideL      属性情報の潜在空間(L*D:正確には(K * D_member_count *D_member_info))
+    @return 勝者ノード    array[第2次元のデータ数(M)]
+    """
+    #ここの処理が正しいか確認する
+    winner_Lm = np.zeros(len(latent_spU2[0]))
+    #何と何の二乗誤差を求めたい？？
+    for index in range(len(latent_spU2[0])):
       #初期値として各ノードの最初の値の差分を設定する
       kn=0
-      dist = genFunc.Diff2Nolm(data_n,latent_spYT[0])+genFunc.Diff2Nolm(input_Data[0],lspYsideL[0])
+      dist = genFunc.Diff2Nolm3D(latent_spU2[:,index],latent_spY[:,0])
+      mpSide = genFunc.Diff2Nolm3D(sideDataNodeL[0],lspYsideL[0])
+      dist = dist+ tmpSide
       #ノードとデータから最小の差となるノードを選択する
       for index_l in range(self.NODE_L): #インデックスと値の両方取れる
-        tmpY = genFunc.Diff2Nolm(data_n,latent_spYT[index_l])
-        tmpSide = genFunc.Diff2Nolm(input_Data[indexN],lspYsideL[index_l])
-        tmp =tmpY +tmpSide 
+        tmpY = genFunc.Diff2Nolm3D(latent_spU2[:,index],latent_spY[:,index_l])
+        tmpSide = genFunc.Diff2Nolm3D(sideDataNodeL[index_k],lspYsideL[index_k])
+        tmp = tmpY+ tmpSide
         if dist>tmp:
           dist=tmp
           kn=index_l
-      winner_Ln[indexN]=kn
-    return(winner_Ln)
+      winner_Lm[index]=kn
+
+    return(winner_Lm)
