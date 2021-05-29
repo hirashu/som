@@ -56,8 +56,8 @@ class TSom():
       
       # 適応過程
       # 潜在空間の更新
-      latent_spU1_ = self.AdaptateProcessU1(learn_rate_L,data) #FIXME ワンチャン行けそう.多分無理
-      latent_spU2_=self.AdaptateProcessU2(learn_rate_K,data) #FIXME ワンチャン行けそう.多分無理
+      latent_spU1_ = self.AdaptateProcessU1(learn_rate_L,data)
+      latent_spU2_=self.AdaptateProcessU2(learn_rate_K,data)
       latent_spY_= np.dot(latent_spU1_.T,learn_rate_K.T).T #[K*N]*[N*L*D]
       count_+=1
       print(count_)
@@ -165,13 +165,6 @@ class TSom():
     @param in_data          学習データ(N *M * D)
     @return モデルU1の学習結果(学習データの第１次元(N) * 潜在空間の第2ノード数(L) * データ次元(D))
     """
-    # 標準化を行うため行毎の和を求めて、逆数を計算する
-    Yk_Rec=np.sum(CPretR_node_winN, axis=1)
-    Yk_Rec=np.reciprocal(Yk_Rec)
-    # 各ノードの学習割合の標準化
-    # CPretR_node_winN (第2ノード数(L) * 学習データの第２次元のデータ数(M))
-    for indexNode in range(len(CPretR_node_winN)):
-      CPretR_node_winN[indexNode]=Yk_Rec[indexNode]*CPretR_node_winN[indexNode,:]
 
     # 潜在空間の更新
     # データ次元ごとに更新値([L*M]*[M*N*1]^t->[L*N])を求め格納(D*[L*N])する。最後に転置する事で変換([N*L*D])する
@@ -187,21 +180,11 @@ class TSom():
     @param in_data          学習データ(N *M * D)
     @return モデルU2の学習結果(潜在空間の第1ノード数(K) * 学習データの第2次元(M) * データ次元(D))
     """
-    #標準化を行うため行毎の和を求めて、逆数を計算する
-    Yk_Rec = np.zeros(len(CPretR_node_winN))#学習量の逆数(潜在空間)
-    Yk_Rec=np.sum(CPretR_node_winN, axis=1)
-    Yk_Rec=np.reciprocal(Yk_Rec)
-
-    #各ノードの学習割合の標準化
-    # CPretR_node_winN (第1ノード数(K) * 学習データの第1次元のデータ数(N))
-    for indexNode in range(len(CPretR_node_winN)):
-      CPretR_node_winN[indexNode]=Yk_Rec[indexNode]*CPretR_node_winN[indexNode,:]
     
     # 潜在空間の更新
     # データ次元ごとに更新値([D*M*N]*[N*K]->[D*M*K])を求める。
     # 転置する事で変換([K*M*D])する
     ret =np.dot(in_data.T,CPretR_node_winN.T)
-
     return ret.T
   
   def AdaptateProcessY(self,CPretR_node_winN,CPretR_nodeL_winN,in_data):
@@ -211,13 +194,6 @@ class TSom():
     @param CPretR_nodeL_winN 標準化学習割合(第2ノード数(L) * 学習データの第2次元のデータ数(M))
     @param in_data          学習データ(N * M * D)
     @return モデルYの学習結果(潜在空間の第1ノード数(K) * 潜在空間の第2ノード数(L) * データ次元(D))
-    """    
-    #標準化を行うため行毎の和を求めて、逆数を計算する
-    Yk_Rec = np.zeros(len(CPretR_node_winN))#学習量の逆数(潜在空間)
-    Yk_Rec=np.sum(CPretR_node_winN, axis=1)
-    Yk_Rec=np.reciprocal(Yk_Rec)
-    #各ノードの学習割合の標準化
-    for indexNode in range(len(CPretR_node_winN)):
-      CPretR_node_winN[indexNode]=Yk_Rec[indexNode]*CPretR_node_winN[indexNode,:]
+    """
     return np.dot(CPretR_node_winN,in_data)
   
