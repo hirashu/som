@@ -5,8 +5,14 @@ import numpy as np
 import lib
 import json
 
+#データパスの設定
+PATH_DATA_KURA = './data/kura.json'
+PATH_DATA_TEAM_MATCH_RESULT = './data/チーム勝敗結果.json'
+PATH_DATA_TEAM_COMPOSTION = './data/チーム構成.json'
+PATH_DATA_CHARACTER_FEATURE = './data/キャラクター特徴.json'
+
 # 定数定義
-COUNT =300
+COUNT =3
 #SOM用
 NODE_X = 10
 NODE_Y = 1
@@ -33,11 +39,11 @@ data_kura=np.array([
 #[[-1,0.75,-0.5625],	[-0.75,0.75,-0.125],	[-0.5,0.75,0.1875],	[-0.25,0.75,0.375],	[0,0.75,0.4375],	[0.25,0.75,0.375],	[0.5,0.75,0.1875],	[0.75,0.75,-0.125],	[1,0.75,-0.5625]],
 [[-1,1,-1],	[-0.75,1,-0.5625],	[-0.5,1,-0.25],	[-0.25,1,-0.0625],	[0,1,0],	[0.25,1,-0.0625],	[0.5,1,-0.25],	[0.75,1,-0.5625],	[1,1,-1]]
 ])
-#データの読み込み
 
-#json_open = open('/Users/iwatake/myproject/Pthon/プリコネ 勝敗.json', 'r')#todo 相対座標化しておく
-#json_load = json.load(json_open)
-#print(json_load)
+# データの読み込み
+json_open = open(PATH_DATA_KURA, 'r')
+json_load = json.load(json_open)
+print(json_load)
 
 #print("学習データ\n" + str(data_kura))
 #print(data)
