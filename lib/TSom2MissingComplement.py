@@ -4,7 +4,7 @@
 #今回の学習データData X K X L X 1 であると仮定する
 import numpy as np
 from . import generalFunction as genFunc
-from . import tsom
+from . import TSom2DirectType
 
 """
 TODO
@@ -15,7 +15,7 @@ TODO
 3.サイド情報の潜在空間を更新する. 
 4.動作確認を行う。
 """
-class TSomSideInfo(tsom.TSom):
+class TSom2MissingComplement(TSom2DirectType.TSom):
   """
   属性情報を扱うTSOM
   # メモ
@@ -26,7 +26,7 @@ class TSomSideInfo(tsom.TSom):
   # データ：[チーム * 編成キャラ *　キャラクターパラメータ ]
   """
 
-  def runTSOM2SideInfo(self, data, sideDataNodeK, sideDataNodeL, count):
+  def runTSOM2(self, data, sideDataNodeK, sideDataNodeL, count):
     """
     プリコネ用入力データ(再度情報)のデータ構造を設定
     TSOM2の学習の実行(３次元配列のTSOM)
@@ -84,6 +84,9 @@ class TSomSideInfo(tsom.TSom):
     #ループ処理おわり
 
     return latent_spY_
+
+  def runTSOM2SideInfo(self, data, sideDataNodeK, sideDataNodeL, count):
+    return 
 
   def WinnerNodeK_sideInfo(self,latent_spU1,latent_spY,sideDataNodeK,lspYsideK):
     """

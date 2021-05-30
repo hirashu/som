@@ -20,10 +20,10 @@ class TSom():
     self.NODE_LY = node_LY
     self.NODE_L = self.NODE_LX * self.NODE_LY
 
-  def runTSOM2(self, data,count):
+  def runTSOM2(self, data, count):
     """
     TSOM2の学習の実行(３次元配列のTSOM)
-    @param data   学習データ(N * M * D)
+    @param data   学習データ(N * M * D) [Arrayデータ] リストは無理
     サンプル data=np.array([[-5,-5,-5],[-3,-3,-3],[0,0,0],[3,3,3],[5,5,5]])
     @param count  学習数
     return　計算結果(K * L * D)
@@ -48,8 +48,8 @@ class TSom():
       self.win_nodeL = self.WinnerNodeL(latent_spU2_,latent_spY_)
 
       # 協調過程
-      learn_rate_K =self.CoordinProcess(self.win_nodeK,self.NODE_K,nodeK_coordinate_,count_)
-      learn_rate_L =self.CoordinProcess(self.win_nodeL,self.NODE_L,nodeL_coordinate_,count_)
+      learn_rate_K =self.CoordinationProcess(self.win_nodeK,self.NODE_K,nodeK_coordinate_,count_)
+      learn_rate_L =self.CoordinationProcess(self.win_nodeL,self.NODE_L,nodeL_coordinate_,count_)
 
       learn_rate_K=self.LearnStandardization(learn_rate_K)
       learn_rate_L=self.LearnStandardization(learn_rate_L)
@@ -65,10 +65,13 @@ class TSom():
 
     return latent_spY_
 
-  #ノード番号の座標を定義する関数(各ノードの配置は正方形とする)
-  #引数　ノードX:int,ノードY:int
-  #戻り値 array[ノード数(NodeX＊NodeY),[X座標,Y座標]]
-  def NodeToCoordinate(self,NodeX,NodeY):
+  def NodeToCoordinate(self, NodeX, NodeY):
+    """
+    ノード番号の座標を定義する関数(各ノードの配置は直方形)
+    @param int NodeX ノードのXの値
+    @param int NodeY ノードYの値
+    @return array[ノード番号(NodeX＊NodeY),[X座標,Y座標]]
+    """
     map_tmp = np.zeros((NodeX*NodeY, 2))
     for i in range(NodeY):
       for j in range(NodeX):
@@ -87,11 +90,11 @@ class TSom():
     for indexN,data_u1 in enumerate(latent_spU1):
       #初期値として各ノードの最初の値の差分を設定する
       kn=0
-      dist = genFunc.Diff2Nolm3D(data_u1,latent_spY[0])
+      dist = genFunc.Diff2Norm3D(data_u1,latent_spY[0])
       #Lノード分やるよー
       #ノードとデータから最小の差となるノードを選択する
       for index_k in range(self.NODE_K): #Lノード回の中からそれっぽいのを決める
-        tmp = genFunc.Diff2Nolm3D(data_u1,latent_spY[index_k])
+        tmp = genFunc.Diff2Norm3D(data_u1,latent_spY[index_k])
         if dist>=tmp:
           dist=tmp
           kn=index_k
@@ -111,10 +114,10 @@ class TSom():
     for index in range(len(latent_spU2[0])):
       #初期値として各ノードの最初の値の差分を設定する
       lm = 0
-      dist = genFunc.Diff2Nolm3D(latent_spU2[:,index],latent_spY[:,0])
+      dist = genFunc.Diff2Norm3D(latent_spU2[:,index],latent_spY[:,0])
       #ノードとデータから最小の差となるノードを選択する
-      for index_l in range(self.NODE_L): #インデックスと値の両方取れる
-        tmp = genFunc.Diff2Nolm3D(latent_spU2[:,index],latent_spY[:,index_l])
+      for index_l in range(self.NODE_L):
+        tmp = genFunc.Diff2Norm3D(latent_spU2[:,index],latent_spY[:,index_l])
         if dist>tmp:
           dist = tmp
           lm = index_l
@@ -122,7 +125,7 @@ class TSom():
 
     return(winner_Lm)
 
-  def CoordinProcess(self,winner_n,Node,node_sp,count):
+  def CoordinationProcess(self,winner_n,Node,node_sp,count):
     """
     協調過程（ノードと学習データとの学習割合を求める）
     @param winner_n   array[データ次元数]
@@ -196,4 +199,3 @@ class TSom():
     @return モデルYの学習結果(潜在空間の第1ノード数(K) * 潜在空間の第2ノード数(L) * データ次元(D))
     """
     return np.dot(CPretR_node_winN,in_data)
-  
