@@ -96,9 +96,6 @@ class TSom2DirectType(tsom.TSom):
           dist = tmp
           lm = index_l
       winner_Lm[index] = lm
-    print(data)
-    print("data[:,0]")
-    print(data[:,0])
     return(winner_Lm)
   
   def AdaptateProcessY(self,CPretR_nodeK_winN,CPretR_nodeL_winM,in_data):

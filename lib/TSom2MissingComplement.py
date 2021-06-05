@@ -15,134 +15,141 @@ TODO
 3.サイド情報の潜在空間を更新する. 
 4.動作確認を行う。
 """
-class TSom2MissingComplement(TSom2DirectType.TSom):
+class TSom2MissingComplement(TSom2DirectType.TSom2DirectType):
   """
-  属性情報を扱うTSOM
-  # メモ
-  # データ構成
-  # メインマップ：キャラクター編成ごとの勝率マップ [Aチーム * Bチーム * 勝敗(1or0)] データ次元が1次元でも表せるため、ある意味2次元行列
-  # data=np.array([[1,0,0],[0,1,0],[0,0,0]]) ->　３次元で表せばいいので問題ないはず。
-  # サイドマップ：チーム特徴マップ 編成キャラクターによるチームの特徴マップ
-  # データ：[チーム * 編成キャラ *　キャラクターパラメータ ]
+  TSom2（直接型）の欠損データの学習
+  スライス多様体(U)を作成せず、インスタンス多様体(Y)のみで学習を行う。
+  学習データに欠損がある場合の学習
   """
 
-  def runTSOM2(self, data, sideDataNodeK, sideDataNodeL, count):
+  def runTSom2(self, data, missingBinaryData, count):
     """
-    プリコネ用入力データ(再度情報)のデータ構造を設定
-    TSOM2の学習の実行(３次元配列のTSOM)
-    @param data   学習データ(N * M * D)
-    サンプル data=np.array([[[-5,-5,-5],[-3,-3,-3],[0,0,0],[3,3,3],[5,5,5]],
-                           [[-5,-5,-5],[-3,-3,-3],[0,0,0],[3,3,3],[5,5,5]]])
-    @param sideDataNodeK  サイド情報_ノードK側(N * D_sid)
-    @param sideDataNodeL  サイド情報_ノードL側(M * D_sid)
-    サンプル sideData=np.array([[[-5,-5,-5],[-3,-3,-3],[0,0,0],[3,3,3],[5,5,5]],
-                          [-5,-5,-5],[-3,-3,-3],[0,0,0],[3,3,3],[5,5,5]]]) 
+    TSom2（直接型）の欠損データの学習の実行(３次元配列のTSom)
+    スライス多様体(U)を作成せず、インスタンス多様体(Y)のみで学習を行う。
+    @param data   学習データ(N * M * D) [Arrayデータ] リストは無理
+    サンプル data=np.array([[-5,-5,-5],[-3,-3,-3]],[[0,0,0],[3,3,3],[5,5,5]])
+    @param missingBinaryData   欠損データのバイナリ情報(N * M) [Arrayデータ] リストは無理
+    サンプル data=np.array([[-5,-5,-5],[-3,-3,-3]])
     @param count  学習数
     return　計算結果(K * L * D)
     """
     #ノード座標
-    nodeK_coordinate_=self.NodeToCoordinate(self.NODE_KX,self.NODE_KY)
-    nodeL_coordinate_=self.NodeToCoordinate(self.NODE_LX,self.NODE_LY)
-    #潜在空間の参照ベクトル初期化(TODO：PCA初期化でもいいよ)
+    nodeK_coordinate_=self.NodeToCoordinate(self.NODE_KX, self.NODE_KY)
+    nodeL_coordinate_=self.NodeToCoordinate(self.NODE_LX, self.NODE_LY)
+    #データ次元の取得
     data_D = len(data.T)
-    # 潜在空間U1の初期化 [N*L*D]
-    latent_spU1_ = np.random.rand(len(data),self.NODE_L,data_D)
-    # 潜在空間U2の初期化 [K*M*D]
-    latent_spU2_ = np.random.rand(self.NODE_K,len(data[0]),data_D)
     # 潜在空間Yの初期化 [K*L*D]
-    latent_spY_ = np.random.rand(self.NODE_K,self.NODE_L,data_D)
-
-    # 属性情報の潜在空間(ノードK)の初期化 [K*Dm*D]
-    lspYsideK_ = np.random.rand(self.NODE_K,len(sideDataNodeK[0]),len(sideDataNodeK[0,0]))
-    # 属性情報の潜在空間(ノードL)の初期化 [L*Dm*D]
-    lspYsideL_ = np.random.rand(self.NODE_L,len(sideDataNodeL[0]),len(sideDataNodeL[0,0]))
+    #潜在空間の参照ベクトル初期化(TODO：PCA初期化でもいいよ)
+    latent_spY_ = np.random.rand(self.NODE_K, self.NODE_L, data_D)
 
     #学習の実施
     count_ =0
     while count_< count:
       # 勝者決定
-      self.win_nodeK = self.WinnerNodeK_sideInfo(latent_spU1_,latent_spY_,sideDataNodeK,lspYsideK_)
-      self.win_nodeL = self.WinnerNodeL_sideInfo(latent_spU2_,latent_spY_,sideDataNodeL,lspYsideL_)
+      self.win_nodeK = self.WinnerNodeK(data, latent_spY_)
+      self.win_nodeL = self.WinnerNodeL(data, latent_spY_)
 
       # 協調過程
-      learn_rate_K =self.CoordinationProcess(self.win_nodeK,self.NODE_K,nodeK_coordinate_,count_)
-      learn_rate_L =self.CoordinationProcess(self.win_nodeL,self.NODE_L,nodeL_coordinate_,count_)
+      learn_rate_K =self.CoordinationProcess(self.win_nodeK, self.NODE_K, nodeK_coordinate_, count_)
+      learn_rate_L =self.CoordinationProcess(self.win_nodeL, self.NODE_L, nodeL_coordinate_, count_)
 
-      learn_rate_K=self.LearnStandardization(learn_rate_K)
-      learn_rate_L=self.LearnStandardization(learn_rate_L)
+      learnWeight = self.StandardDiagReciprocal(learn_rate_K, learn_rate_L, missingBinaryData)
       
       # 適応過程
       # 潜在空間の更新
-      latent_spU1_ = self.AdaptateProcessU1(learn_rate_L,data)
-      latent_spU2_=self.AdaptateProcessU2(learn_rate_K,data)
-      latent_spY_= np.dot(latent_spU1_.T,learn_rate_K.T).T #[K*N]*[N*L*D]
-      #潜在空間（属性情報）の更新 TODO 追加項目
-      lspYsideK_= np.dot(learn_rate_K,sideData)
-      lspYsideL_= np.dot(learn_rate_L,sideData)
+      latent_spY_ = self.AdaptateProcessY(learn_rate_K, learn_rate_L, learnWeight, data, missingBinaryData)
+
       count_+=1
       print(count_)
     #ループ処理おわり
 
     return latent_spY_
 
-  def runTSOM2SideInfo(self, data, sideDataNodeK, sideDataNodeL, count):
-    return 
-
-  def WinnerNodeK_sideInfo(self,latent_spU1,latent_spY,sideDataNodeK,lspYsideK):
+  def runTSom2sideInfo(self, data, missingBinaryData, sideInfo, count):
     """
-    サイド情報を用いて勝者ノード(第１ノード)の選定(競合過程)を行う。
-    @param latent_spU1    U1(N*L*D)
-    @param latent_spY     潜在空間Y(K*L*D)
-    @param sideDataNodeK  属性情報(N*D:正確には(N * D_member_count *D_member_info))
-    @param lspYsideK      属性情報の潜在空間(K*D:正確には(K * D_member_count *D_member_info))
-    @return 勝者ノード      array[第１次元のデータ数(N)]
+    テンプレ
+    TSom2（直接型）の欠損データの学習(属性情報あり)の実行(３次元配列のTSom)
+    スライス多様体(U)を作成せず、インスタンス多様体(Y)のみで学習を行う。
+    @param data   学習データ(N * M * D) [Arrayデータ] リストは無理
+    サンプル data=np.array([[-5,-5,-5],[-3,-3,-3]],[[0,0,0],[3,3,3],[5,5,5]])
+    @param missingBinaryData   欠損データのバイナリ情報(N * M) [Arrayデータ] リストは無理
+    サンプル data=np.array([[-5,-5,-5],[-3,-3,-3]])
+    @param count  学習数
+    return　計算結果(K * L * D)
     """
-    winner_Kn = np.zeros(len(latent_spU1))
-    #データ数分勝者の算出を繰り返す
-    for indexN,data_u1 in enumerate(latent_spU1):
-      #初期値として各ノードの最初の値の差分を設定する
-      kn=0
-      dist = genFunc.Diff2Norm3D(data_u1,latent_spY[0])
-      mpSide = genFunc.Diff2Norm3D(sideDataNodeK[0],lspYsideK[0])
-      dist = dist+ mpSide
-      #ノードとデータから最小の差となるノードを選択する
-      for index_k in range(self.NODE_K):
-        tmpY = genFunc.Diff2Norm3D(data_u1,latent_spY[index_k])
-        tmpSide = genFunc.Diff2Norm3D(sideDataNodeK[index_k],lspYsideK[index_k])
-        tmp = tmpY+ tmpSide
-        if dist>=tmp:
-          dist=tmp
-          kn=index_k
-      winner_Kn[indexN]=kn
+    #ノード座標
+    nodeK_coordinate_=self.NodeToCoordinate(self.NODE_KX, self.NODE_KY)
+    nodeL_coordinate_=self.NodeToCoordinate(self.NODE_LX, self.NODE_LY)
+    #データ次元の取得
+    data_D = len(data.T)
+    # 潜在空間Yの初期化 [K*L*D]
+    #潜在空間の参照ベクトル初期化(TODO：PCA初期化でもいいよ)
+    latent_spY_ = np.random.rand(self.NODE_K, self.NODE_L, data_D)
 
-    return(winner_Kn)
+    #学習の実施
+    count_ =0
+    while count_< count:
+      # 勝者決定
+      self.win_nodeK = self.WinnerNodeK(data, latent_spY_)
+      self.win_nodeL = self.WinnerNodeL(data, latent_spY_)
 
-  def WinnerNodeL_sideInfo(self,latent_spU2,latent_spY,sideDataNodeL,lspYsideL):
+      # 協調過程
+      learn_rate_K =self.CoordinationProcess(self.win_nodeK, self.NODE_K, nodeK_coordinate_, count_)
+      learn_rate_L =self.CoordinationProcess(self.win_nodeL, self.NODE_L, nodeL_coordinate_, count_)
+
+      learnWeight = self.LearnStandardization(learn_rate_K, learn_rate_L, missingBinaryData)
+      
+      # 適応過程
+      # 潜在空間の更新
+      latent_spY_ = self.AdaptateProcessY(learn_rate_K, learn_rate_L, learnWeight, data, missingBinaryData)
+
+      count_+=1
+      print(count_)
+    #ループ処理おわり
+
+    return latent_spY_
+
+  def StandardDiagReciprocal(self, learningValueNodeK, learningValueNodeL, missingBinaryData):
     """
-    サイド情報を用いて勝者ノード(第２ノード)の選定(競合過程)を行う。
-    @param latent_spU2  U2(K*M*D)
-    @param latent_spY   潜在空間Y(K*L*D)
-    @param sideDataNodeL  属性情報(M*D:正確には(M * D_member_count *D_member_info))
-    @param lspYsideL      属性情報の潜在空間(L*D:正確には(K * D_member_count *D_member_info))
-    @return 勝者ノード    array[第2次元のデータ数(M)]
+    学習量の標準化された対角行列の逆数を求める。
+    @param LearningValueK 学習割合_標準化前(潜在空間のノード(第１ノード数：K) * 入力データ数(N))
+    @param LearningValueL 学習割合_標準化前(潜在空間のノード(第２ノード数：L) * 入力データ数(M))
+    @param missingBinaryData 学習データ(欠損あり)のバイナリデータ(N * M * D(=1))
+    @return 標準学習量の重み(潜在空間の第１ノード(K) * 潜在空間の第２ノード(L) * D(=1)の逆数)
     """
-    #ここの処理が正しいか確認する
-    winner_Lm = np.zeros(len(latent_spU2[0]))
-    #何と何の二乗誤差を求めたい？？
-    for index in range(len(latent_spU2[0])):
-      #初期値として各ノードの最初の値の差分を設定する
-      kn=0
-      dist = genFunc.Diff2Norm3D(latent_spU2[:,index],latent_spY[:,0])
-      mpSide = genFunc.Diff2Norm3D(sideDataNodeL[0],lspYsideL[0])
-      dist = dist+ mpSide
-      #ノードとデータから最小の差となるノードを選択する
-      for index_l in range(self.NODE_L): 
-        tmpY = genFunc.Diff2Norm3D(latent_spU2[:,index],latent_spY[:,index_l])
-        tmpSide = genFunc.Diff2Norm3D(sideDataNodeL[index_l],lspYsideL[index_l])
-        tmp = tmpY+ tmpSide
-        if dist>tmp:
-          dist=tmp
-          kn=index_l
-      winner_Lm[index]=kn
 
-    return(winner_Lm)
+    # バイナリ情報を含む学習量の重みを求める
+    # データ次元ごとにノードLの更新値([L*M]*[M*N*(1)] ->[L*N])を求め,Yに一時格納(D*[L*N])する。
+    # ノードKの更新値([D*L*N]*[N*K]->[D*L*K])を求める。
+    # 転置する事で変換([K*M*D])する
+    Yl_std = np.zeros((len(missingBinaryData.T), len(learningValueNodeL), len(missingBinaryData)))
+    for index in range(len(missingBinaryData.T)):
+      Yl_std[index]=(np.dot(learningValueNodeL, missingBinaryData[:,:,index].T))
+    weightY_Diag_t =np.dot(Yl_std, learningValueNodeK.T)
+    Y_Diag = weightY_Diag_t.T
+    weightY=np.reciprocal(Y_Diag)
+    return weightY
+
+  def AdaptateProcessY(self, CPretR_nodeK_winN, CPretR_nodeL_winM, learnWeight, learnData, missingBinaryData):
+    """
+    適応過程Y
+    @param CPretR_nodeK_winN 標準化学習割合(第1ノード数(K) * 学習データの第1次元のデータ数(N))
+    @param CPretR_nodeL_winM 標準化学習割合(第2ノード数(L) * 学習データの第2次元のデータ数(M))
+    @param learnWeight       標準学習量の重み(K * L * D(1))
+    @param learnData         学習データ(N * M * D)
+    @param missingBinaryData 学習データ(欠損あり)のバイナリデータ(N * M * D(1))
+    @return モデルYの学習結果(潜在空間の第1ノード数(K) * 潜在空間の第2ノード数(L) * データ次元(D))
+    """
+    #学習データとバイナリデータの要素をかけて、学習データの重みづけを行う
+    BinaryLearnData = learnData * missingBinaryData
+    # 潜在空間の更新
+    # データ次元ごとにノードLの更新値([L*M]*[M*N*1] -> [L*N])を求め,Yに一時格納(D*[L*N])する。
+    # ノードKの更新値([D*L*N]*[N*K]->[D*L*K])を求める。
+    # 転置する事で変換([K*M*D])させて、標準学習量の重み((K * L * D)と要素積を求める
+    Yl_std = np.zeros((len(BinaryLearnData.T), self.NODE_L, len(BinaryLearnData)))
+    for index in range(len(BinaryLearnData.T)):
+      Yl_std[index]=(np.dot(CPretR_nodeL_winM, BinaryLearnData[:,:,index].T))
+    Y_normal =np.dot(Yl_std, CPretR_nodeK_winN.T)
+    ret = learnWeight * Y_normal.T
+    return ret
+  
