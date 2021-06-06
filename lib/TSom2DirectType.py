@@ -29,6 +29,7 @@ class TSom2DirectType(tsom.TSom):
     # 潜在空間Yの初期化 [K*L*D]
     #潜在空間の参照ベクトル初期化(TODO：PCA初期化でもいいよ)
     latent_spY_ = np.random.rand(self.NODE_K, self.NODE_L, data_D)
+    #勝者の初期化
     self.win_nodeK = np.random.randint(self.NODE_K - 1, size =(len(data)))
 
     #学習の実施

@@ -41,13 +41,15 @@ class TSom2MissingComplement(TSom2DirectType.TSom2DirectType):
     # 潜在空間Yの初期化 [K*L*D]
     #潜在空間の参照ベクトル初期化(TODO：PCA初期化でもいいよ)
     latent_spY_ = np.random.rand(self.NODE_K, self.NODE_L, data_D)
+    #勝者の初期化
+    self.win_nodeK = np.random.randint(self.NODE_K - 1, size =(len(data)))
 
     #学習の実施
     count_ =0
     while count_< count:
       # 勝者決定
-      self.win_nodeK = self.WinnerNodeK(data, latent_spY_)
-      self.win_nodeL = self.WinnerNodeL(data, latent_spY_)
+      self.win_nodeL = self.WinnerNodeLDirectType(data, latent_spY_, self.win_nodeK)
+      self.win_nodeK = self.WinnerNodeKDirectType(data, latent_spY_, self.win_nodeL)
 
       # 協調過程
       learn_rate_K =self.CoordinationProcess(self.win_nodeK, self.NODE_K, nodeK_coordinate_, count_)

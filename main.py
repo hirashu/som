@@ -91,10 +91,10 @@ print(tSomDirect.win_nodeK)
 print("勝者ノードL\n")
 print(tSomDirect.win_nodeL)
 
-""" tSomDirectMC = lib.TSom2MissingComplement.TSom2MissingComplement(NODE_KX, NODE_KY, NODE_LX, NODE_LY)
+tSomDirectMC = lib.TSom2MissingComplement.TSom2MissingComplement(NODE_KX, NODE_KY, NODE_LX, NODE_LY)
 retMC = tSomDirectMC.runTSom2(data_kura_missing, data_kuraBinary, COUNT)
 print("学習結果_retMC\n"+str(retMC))
 print("勝者ノードK\n")
 print(tSomDirectMC.win_nodeK)
 print("勝者ノードL\n")
-print(tSomDirectMC.win_nodeL) """
+print(tSomDirectMC.win_nodeL)
