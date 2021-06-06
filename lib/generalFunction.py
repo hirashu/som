@@ -33,7 +33,7 @@ def Diff2Norm(position1,position2):
 
 def Diff2Norm3D(position1,position2):
   """
-  勝者ノード(第１ノード)の選定(競合過程)を行う。勝者ノードとはデータから選出されたノードのことである。
+  ３次元配列用の２乗ノルムを求める.
   @param position1  データ１[M*D]
   @param position2  データ２[M*D]
   @return ２乗距離（スカラー）
@@ -42,4 +42,18 @@ def Diff2Norm3D(position1,position2):
   for el1 in range(len(position1)):
     for el2 in range(len(position1[el1])):
       tmp += np.square(position1[el1][el2]-position2[el1][el2])
-  return np.sqrt(tmp) 
+  return np.sqrt(tmp)
+
+def Diff2Norm3DUseWinnerNode(position1, position2, winnerNode):
+  """
+  ３次元配列用の２乗ノルムを求める.入力データの配列の次元が異なるため、勝者ノードを用いて対象を選択する。
+  @param position1  データ１[N*D] or [M*D]
+  @param position2  データ２[K*D] or [L*D]
+  @param winnerNode 勝者ノード[データ次元数(N) or (M)]
+  @return ２乗距離（スカラー）
+  """
+  tmp=0
+  for el1 in range(len(position1)):
+    for el2 in range(len(position1[el1])):
+      tmp += np.square(position1[el1][el2]-position2[int(winnerNode[el1])][el2])
+  return np.sqrt(tmp)

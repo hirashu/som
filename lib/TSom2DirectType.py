@@ -29,13 +29,14 @@ class TSom2DirectType(tsom.TSom):
     # 潜在空間Yの初期化 [K*L*D]
     #潜在空間の参照ベクトル初期化(TODO：PCA初期化でもいいよ)
     latent_spY_ = np.random.rand(self.NODE_K, self.NODE_L, data_D)
+    self.win_nodeK = np.random.randint(self.NODE_K - 1, size =(len(data)))
 
     #学習の実施
     count_ =0
     while count_< count:
       # 勝者決定
-      self.win_nodeK = self.WinnerNodeK(data,latent_spY_)
-      self.win_nodeL = self.WinnerNodeL(data,latent_spY_)
+      self.win_nodeL = self.WinnerNodeLDirectType(data, latent_spY_, self.win_nodeK)
+      self.win_nodeK = self.WinnerNodeKDirectType(data, latent_spY_, self.win_nodeL)
 
       # 協調過程
       learn_rate_K =self.CoordinationProcess(self.win_nodeK,self.NODE_K,nodeK_coordinate_,count_)
@@ -54,11 +55,12 @@ class TSom2DirectType(tsom.TSom):
 
     return latent_spY_
 
-  def WinnerNodeK(self, data, latent_spY):
+  def WinnerNodeKDirectType(self, data, latent_spY, winner_Lm):
     """
     勝者ノード(第１ノード)の選定(競合過程)を行う。勝者ノードとはデータから選出されたノードのことである。
     @param data         学習データ(N*M*D)
     @param latent_spY   潜在空間Y(K*L*D)
+    @param  winner_Lm   array[データ次元数(M)]
     @return 勝者ノード    array[第１次元のデータ数(N)]
     """
     winner_Kn = np.zeros(len(data))
@@ -66,10 +68,10 @@ class TSom2DirectType(tsom.TSom):
     for indexN, data_n in enumerate(data):
       #初期値として各ノードの最初の値の差分を設定する
       kn=0
-      dist = genFunc.Diff2Norm3D(data_n,latent_spY[0])
+      dist = genFunc.Diff2Norm3DUseWinnerNode(data_n, latent_spY[0], winner_Lm)
       #ノードとデータから最小の差となるノードを選択する
       for index_k in range(self.NODE_K):
-        tmp = genFunc.Diff2Norm3D(data_n,latent_spY[index_k])
+        tmp = genFunc.Diff2Norm3DUseWinnerNode(data_n, latent_spY[index_k], winner_Lm)
         if dist>=tmp:
           dist=tmp
           kn=index_k
@@ -77,21 +79,22 @@ class TSom2DirectType(tsom.TSom):
 
     return(winner_Kn)
 
-  def WinnerNodeL(self,data,latent_spY):
+  def WinnerNodeLDirectType(self,data,latent_spY, winner_Kn):
     """
     勝者ノード(第２ノード)の選定(競合過程)を行う。勝者ノードとはデータから選出されたノードのことである。
     @param data         学習データ(N*M*D)  U2(K*M*D)
     @param latent_spY   潜在空間Y(K*L*D)
+    @param  winner_Kn   array[データ次元数(N)]
     @return 勝者ノード    array[第2次元のデータ数(M)]
     """
     winner_Lm = np.zeros(len(data[0]))
     for index in range(len(data[0])):
       #初期値として各ノードの最初の値の差分を設定する
       lm = 0
-      dist = genFunc.Diff2Norm3D(data[:,index],latent_spY[:,0])
+      dist = genFunc.Diff2Norm3DUseWinnerNode(data[:,index],latent_spY[:,0],winner_Kn)
       #ノードとデータから最小の差となるノードを選択する
       for index_l in range(self.NODE_L):
-        tmp = genFunc.Diff2Norm3D(data[:,index],latent_spY[:,index_l])
+        tmp = genFunc.Diff2Norm3DUseWinnerNode(data[:,index],latent_spY[:,index_l],winner_Kn)
         if dist>tmp:
           dist = tmp
           lm = index_l
