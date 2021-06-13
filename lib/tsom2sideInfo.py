@@ -77,8 +77,8 @@ class TSomSideInfo(tsom.TSom):
       latent_spU2_=self.AdaptateProcessU2(learn_rate_K,data)
       latent_spY_= np.dot(latent_spU1_.T,learn_rate_K.T).T #[K*N]*[N*L*D]
       #潜在空間（属性情報）の更新 TODO 追加項目
-      lspYsideK_= np.dot(learn_rate_K,sideData)
-      lspYsideL_= np.dot(learn_rate_L,sideData)
+      lspYsideK_= np.dot(learn_rate_K, sideDataNodeK)
+      lspYsideL_= np.dot(learn_rate_L, sideDataNodeL)
       count_+=1
       print(count_)
     #ループ処理おわり
