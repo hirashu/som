@@ -75,8 +75,8 @@ class TSom2MissingComplement(TSom2DirectType.TSom2DirectType):
     サンプル data=np.array([[-5,-5,-5],[-3,-3,-3]],[[0,0,0],[3,3,3],[5,5,5]])
     @param missingBinaryData   欠損データのバイナリ情報(N * M) [Arrayデータ] リストは無理
     サンプル data=np.array([[-5,-5,-5],[-3,-3,-3]])
-    @param sideDataNodeK  サイド情報_ノードK側(N * D_sid)
-    @param sideDataNodeL  サイド情報_ノードL側(M * D_sid)
+    @param sideDataNodeK  サイド情報_ノードK側(N * D_sid(5 * D_memberInfo))
+    @param sideDataNodeL  サイド情報_ノードL側(M * D_sid(5 * D_memberInfo))
     サンプル sideData=np.array([[-5,-5,-5],　[-3,-3,-3], [0,0,0]]) 
     @param count  学習数
     return　計算結果(K * L * D)
@@ -92,10 +92,10 @@ class TSom2MissingComplement(TSom2DirectType.TSom2DirectType):
     #勝者の初期化
     self.win_nodeK = np.random.randint(self.NODE_K - 1, size =(len(data)))
 
-    # 属性情報の潜在空間(ノードK)の初期化 [K*D_sideK]
-    lspYsideK_ = np.random.rand(self.NODE_K,len(sideDataNodeK[0]))
-    # 属性情報の潜在空間(ノードL)の初期化 [L*D_sideL]
-    lspYsideL_ = np.random.rand(self.NODE_L,len(sideDataNodeL[0]))
+    # 属性情報の潜在空間(ノードK)の初期化 [K*D_sideKD_sid(5 * D_memberInfo)]
+    lspYsideK_ = np.random.rand(self.NODE_K,len(sideDataNodeK[0]), len(sideDataNodeK[0][0]))
+    # 属性情報の潜在空間(ノードL)の初期化 [L*D_sideLD_sid(5 * D_memberInfo)]
+    lspYsideL_ = np.random.rand(self.NODE_L,len(sideDataNodeL[0]),len(sideDataNodeL[0][0]))
 
     #学習の実施
     count_ =0
@@ -129,8 +129,8 @@ class TSom2MissingComplement(TSom2DirectType.TSom2DirectType):
     勝者ノード(第１ノード)の選定(競合過程)を行う。勝者ノードとはデータから選出されたノードのことである。
     @param  data         学習データ(N*M*D)
     @param  latent_spY   潜在空間Y(K*L*D)
-    @param  sideDataNodeK   属性情報_ノードK側(N * D_sid)
-    @param  lspYsideK   属性情報の潜在空間(ノードK)の初期化 [K*D_sideK]
+    @param  sideDataNodeK   属性情報_ノードK側(N * D_sidD_sid(5 * D_memberInfo))
+    @param  lspYsideK   属性情報の潜在空間(ノードK)の初期化 [K*D_sideKD_sid(5 * D_memberInfo)]
     @param  winner_Lm   array[データ次元数(M)]
     @return 勝者ノード    array[第１次元のデータ数(N)]
     """
@@ -141,13 +141,13 @@ class TSom2MissingComplement(TSom2DirectType.TSom2DirectType):
       kn=0
       dist = genFunc.Diff2Norm3DUseWinnerNode(data_n, latent_spY[0], winner_Lm)
       # todo サイド情報の重みを考える（現状だと次元数の問題でサイド情報が軽いはず。比率を測ればいいけど。） 
-      distSide = genFunc.Diff2Norm(sideDataNodeK[indexN],lspYsideK[0])
+      distSide = genFunc.Diff2Norm3D(sideDataNodeK[indexN],lspYsideK[0])
       dist = dist + distSide
       #ノードとデータから最小の差となるノードを選択する
       for index_k in range(self.NODE_K):
         tmp = genFunc.Diff2Norm3DUseWinnerNode(data_n, latent_spY[index_k], winner_Lm)
         # todo サイド情報の重みを変更
-        tmpSide = genFunc.Diff2Norm(sideDataNodeK[indexN],lspYsideK[index_k])
+        tmpSide = genFunc.Diff2Norm3D(sideDataNodeK[indexN],lspYsideK[index_k])
         dist = dist + tmpSide
         if dist>=tmp:
           dist=tmp
@@ -161,8 +161,8 @@ class TSom2MissingComplement(TSom2DirectType.TSom2DirectType):
     勝者ノード(第２ノード)の選定(競合過程)を行う。勝者ノードとはデータから選出されたノードのことである。
     @param data         学習データ(N*M*D)  U2(K*M*D)
     @param latent_spY   潜在空間Y(K*L*D)
-    @param  sideDataNodeL  属性情報_ノードL側(M * D_sid)
-    @param  lspYsideL   属性情報の潜在空間(ノードL)の初期化 [L*D_sideL]
+    @param  sideDataNodeL  属性情報_ノードL側(M * D_sidD_sid(5 * D_memberInfo))
+    @param  lspYsideL   属性情報の潜在空間(ノードL)の初期化 [L*D_sideLD_sid(5 * D_memberInfo)]
     @param  winner_Kn   array[データ次元数(N)]
     @return 勝者ノード    array[第2次元のデータ数(M)]
     """
@@ -172,13 +172,13 @@ class TSom2MissingComplement(TSom2DirectType.TSom2DirectType):
       lm = 0
       dist = genFunc.Diff2Norm3DUseWinnerNode(data[:,index],latent_spY[:,0],winner_Kn)
       # todo サイド情報の重みを考える（現状だと次元数の問題でサイド情報が軽いはず。比率を測ればいいけど。） 
-      distSide = genFunc.Diff2Norm(sideDataNodeL[index],lspYsideL[0])
+      distSide = genFunc.Diff2Norm3D(sideDataNodeL[index],lspYsideL[0])
       dist = dist + distSide
       #ノードとデータから最小の差となるノードを選択する
       for index_l in range(self.NODE_L):
         tmp = genFunc.Diff2Norm3DUseWinnerNode(data[:,index],latent_spY[:,index_l],winner_Kn)
         # todo サイド情報の重みを変更
-        tmpSide = genFunc.Diff2Norm(sideDataNodeL[index],lspYsideL[index_l])
+        tmpSide = genFunc.Diff2Norm3D(sideDataNodeL[index],lspYsideL[index_l])
         dist = dist + tmpSide
         if dist>tmp:
           dist = tmp
