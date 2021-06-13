@@ -141,13 +141,13 @@ class TSom2MissingComplement(TSom2DirectType.TSom2DirectType):
       kn=0
       dist = genFunc.Diff2Norm3DUseWinnerNode(data_n, latent_spY[0], winner_Lm)
       # todo サイド情報の重みを考える（現状だと次元数の問題でサイド情報が軽いはず。比率を測ればいいけど。） 
-      distSide = genFunc.Diff2Norm3D(sideDataNodeK[indexN],lspYsideK[0])
+      distSide = genFunc.Diff2Norm(sideDataNodeK[indexN],lspYsideK[0])
       dist = dist + distSide
       #ノードとデータから最小の差となるノードを選択する
       for index_k in range(self.NODE_K):
         tmp = genFunc.Diff2Norm3DUseWinnerNode(data_n, latent_spY[index_k], winner_Lm)
         # todo サイド情報の重みを変更
-        tmpSide = genFunc.Diff2Norm3D(sideDataNodeK[indexN],lspYsideK[index_k])
+        tmpSide = genFunc.Diff2Norm(sideDataNodeK[indexN],lspYsideK[index_k])
         dist = dist + tmpSide
         if dist>=tmp:
           dist=tmp
@@ -172,13 +172,13 @@ class TSom2MissingComplement(TSom2DirectType.TSom2DirectType):
       lm = 0
       dist = genFunc.Diff2Norm3DUseWinnerNode(data[:,index],latent_spY[:,0],winner_Kn)
       # todo サイド情報の重みを考える（現状だと次元数の問題でサイド情報が軽いはず。比率を測ればいいけど。） 
-      distSide = genFunc.Diff2Norm3D(sideDataNodeL[index],lspYsideL[0])
+      distSide = genFunc.Diff2Norm(sideDataNodeL[index],lspYsideL[0])
       dist = dist + distSide
       #ノードとデータから最小の差となるノードを選択する
       for index_l in range(self.NODE_L):
         tmp = genFunc.Diff2Norm3DUseWinnerNode(data[:,index],latent_spY[:,index_l],winner_Kn)
         # todo サイド情報の重みを変更
-        tmpSide = genFunc.Diff2Norm3D(sideDataNodeL[index],lspYsideL[index_l])
+        tmpSide = genFunc.Diff2Norm(sideDataNodeL[index],lspYsideL[index_l])
         dist = dist + tmpSide
         if dist>tmp:
           dist = tmp
