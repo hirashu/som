@@ -8,6 +8,7 @@ import json
 #データパスの設定
 PATH_DATA_KURA = './data/kura.json'
 PATH_DATA_TEAM_MATCH_RESULT = './data/チーム勝敗結果_3d.json'
+PATH_DATA_TEAM_MATCH_RESULT_BINARY = './data/チーム勝敗結果バイナリ_3d.json'
 PATH_DATA_TEAM_COMPOSTION = './data/チーム構成.json'
 PATH_DATA_CHARACTER_FEATURE = './data/キャラクター特徴.json'
 
@@ -18,10 +19,10 @@ NODE_X = 10
 NODE_Y = 1
 
 #TSOM用
-NODE_KX = 30 #エラーとなる
-NODE_KY = 1
-NODE_LX = 30
-NODE_LY = 1
+NODE_KX = 5 #エラーとなる
+NODE_KY = 5
+NODE_LX = 5
+NODE_LY = 5
 
 # 関数化（入力データ）
 #data形式はこれ（入力データは外部からインプットする）
@@ -75,24 +76,16 @@ teamMatchResult_open = open(PATH_DATA_TEAM_MATCH_RESULT, 'r')
 teamMatchResult = json.load(teamMatchResult_open)
 print(teamMatchResult)
 
-kura_open = open(PATH_DATA_KURA, 'r')
-kura = json.load(kura_open)
-print(kura)
+teamMatchResultBinary_open = open(PATH_DATA_TEAM_MATCH_RESULT_BINARY, 'r')
+teamMatchResultBinary = json.load(teamMatchResultBinary_open)
+print(teamMatchResultBinary)
 
 # 読み込んだリストをArrayに変換
 teamMatchResultArray = np.array(teamMatchResult)
-kuraArray = np.array(kura)
-
-tSomDirect = lib.TSom2DirectType.TSom2DirectType(NODE_KX, NODE_KY, NODE_LX, NODE_LY)
-ret = tSomDirect.runTSom2(data_kura, COUNT)
-print("学習結果\n"+str(ret))
-print("勝者ノードK\n")
-print(tSomDirect.win_nodeK)
-print("勝者ノードL\n")
-print(tSomDirect.win_nodeL)
+teamMatchResultBinaryArray = np.array(teamMatchResultBinary)
 
 tSomDirectMC = lib.TSom2MissingComplement.TSom2MissingComplement(NODE_KX, NODE_KY, NODE_LX, NODE_LY)
-retMC = tSomDirectMC.runTSom2(data_kura_missing, data_kuraBinary, COUNT)
+retMC = tSomDirectMC.runTSom2(teamMatchResultArray, teamMatchResultBinaryArray, COUNT)
 print("学習結果_retMC\n"+str(retMC))
 print("勝者ノードK\n")
 print(tSomDirectMC.win_nodeK)
