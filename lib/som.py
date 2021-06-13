@@ -30,7 +30,7 @@ class Som():
       win_node_ = self._WinnerNode(data,latent_sp_)
       #print(win_node_)
       # 協調過程
-      learn_rate_ = self._CoordinProcess(win_node_,latent_sp_,node_coordinate_,count_)
+      learn_rate_ = self._CoordinationProcess(win_node_,latent_sp_,node_coordinate_,count_)
       # 適応過程
       latent_sp_ = self._AdaptateProcess(learn_rate_,data)
       count_+=1
@@ -60,10 +60,10 @@ class Som():
     for indexN,data_n in enumerate(in_data):
       #初期値として各ノードの最初の値の差分を設定する
       kn=0
-      dist = genFunc.Diff2Nolm(data_n,latent_sp[0])
+      dist = genFunc.Diff2Norm(data_n,latent_sp[0])
       #ノードとデータから最小の差となるノードを選択する
-      for index,latent_y in enumerate(latent_sp): #インデックスと値の両方取れる
-        tmp = genFunc.Diff2Nolm(data_n,latent_y)
+      for index,latent_y in enumerate(latent_sp): 
+        tmp = genFunc.Diff2Norm(data_n,latent_y)
         if dist>tmp:
           dist=tmp
           kn=index
@@ -73,7 +73,7 @@ class Som():
   # 協調過程（ノードと学習データとの学習割合を求める）
   # 引数:勝者ノード、潜在空間、潜在空間の座標(ノード数)、カウント
   # 戻り値　学習割合(全ノード X 入力データ数)
-  def _CoordinProcess(self,winner_Kn,latent_sp,node_sp,count):
+  def _CoordinationProcess(self,winner_Kn,latent_sp,node_sp,count):
     # 初期化
     Ykn_Ret = np.zeros((self.NODE_K, len(winner_Kn))) #学習率(潜在空間 X データ数)
     sigma = genFunc.SigmaCalac(count)
