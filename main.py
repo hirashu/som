@@ -12,8 +12,11 @@ PATH_DATA_TEAM_MATCH_RESULT_BINARY = './data/チーム勝敗結果バイナリ_3
 PATH_DATA_TEAM_COMPOSTION = './data/チーム構成.json'
 PATH_DATA_CHARACTER_FEATURE = './data/キャラクター特徴.json'
 
+#学習結果の保存パス
+PATH_RESULT_DATA_MAIN = './resultData/学習結果メインインスタンス.json'
+
 # 定数定義
-COUNT = 300
+COUNT = 3
 #SOM用
 NODE_X = 10
 NODE_Y = 1
@@ -74,10 +77,12 @@ dataB=np.array([[1,2],
 # データの読み込み
 teamMatchResult_open = open(PATH_DATA_TEAM_MATCH_RESULT, 'r')
 teamMatchResult = json.load(teamMatchResult_open)
+teamMatchResult_open.close()
 print(teamMatchResult)
 
 teamMatchResultBinary_open = open(PATH_DATA_TEAM_MATCH_RESULT_BINARY, 'r')
 teamMatchResultBinary = json.load(teamMatchResultBinary_open)
+teamMatchResultBinary_open.close()
 print(teamMatchResultBinary)
 
 # 読み込んだリストをArrayに変換
@@ -91,3 +96,12 @@ print("勝者ノードK\n")
 print(tSomDirectMC.win_nodeK)
 print("勝者ノードL\n")
 print(tSomDirectMC.win_nodeL)
+
+
+#result_main_open.write(retMC)
+
+result_main_open = open(PATH_RESULT_DATA_MAIN, 'w')
+#json.dumps(retMC,result_main_open)
+dump = json.dumps(retMC, cls = lib.NumpyEncoder.NumpyEncoder)
+result_main_open.writelines(dump)
+print("main終わり")
