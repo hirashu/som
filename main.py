@@ -9,8 +9,18 @@ import json
 PATH_DATA_KURA = './data/kura.json'
 PATH_DATA_TEAM_MATCH_RESULT = './data/チーム勝敗結果_3d.json'
 PATH_DATA_TEAM_MATCH_RESULT_BINARY = './data/チーム勝敗結果バイナリ_3d.json'
-PATH_DATA_TEAM_COMPOSTION = './data/チーム構成.json'
-PATH_DATA_CHARACTER_FEATURE = './data/キャラクター特徴.json'
+PATH_DATA_TEAM_COMPOSITION_SIDE_K = './data/チーム構成キャラクター情報_攻撃.json'
+PATH_DATA_TEAM_COMPOSITION_SIDE_L = './data/チーム構成キャラクター情報_防御.json'
+#以下今のところ未使用
+#PATH_DATA_TEAM_COMPOSTION = './data/チーム構成.json'
+#PATH_DATA_CHARACTER_FEATURE = './data/キャラクター特徴.json'
+
+#学習結果の保存パス
+PATH_RESULT_DATA_MAIN = './resultData/学習結果メインインスタンス.json'
+PATH_RESULT_SIDE_NODE_K = './resultData/学習結果サイド情報K.json'
+PATH_RESULT_SIDE_NODE_L = './resultData/学習結果サイド情報L.json'
+PATH_RESULT_WINNER_NODE_K = './resultData/学習結果勝者K.json'
+PATH_RESULT_WINNER_NODE_L = './resultData/学習結果勝者L.json'
 
 # 定数定義
 COUNT = 300
@@ -74,20 +84,66 @@ dataB=np.array([[1,2],
 # データの読み込み
 teamMatchResult_open = open(PATH_DATA_TEAM_MATCH_RESULT, 'r')
 teamMatchResult = json.load(teamMatchResult_open)
+teamMatchResult_open.close()
 print(teamMatchResult)
 
 teamMatchResultBinary_open = open(PATH_DATA_TEAM_MATCH_RESULT_BINARY, 'r')
 teamMatchResultBinary = json.load(teamMatchResultBinary_open)
+teamMatchResultBinary_open.close()
 print(teamMatchResultBinary)
+
+teamCompositionSideK_open = open(PATH_DATA_TEAM_COMPOSITION_SIDE_K, 'r')
+teamCompositionSideK = json.load(teamCompositionSideK_open)
+teamCompositionSideK_open.close()
+print(teamCompositionSideK)
+
+teamCompositionSideL_open = open(PATH_DATA_TEAM_COMPOSITION_SIDE_L, 'r')
+teamCompositionSideL = json.load(teamCompositionSideL_open)
+teamCompositionSideL_open.close()
+print(teamCompositionSideL)
 
 # 読み込んだリストをArrayに変換
 teamMatchResultArray = np.array(teamMatchResult)
 teamMatchResultBinaryArray = np.array(teamMatchResultBinary)
+teamCompositionSideKArray = np.array(teamCompositionSideK)
+teamCompositionSideLArray = np.array(teamCompositionSideL)
 
-tSomDirectMC = lib.TSom2MissingComplement.TSom2MissingComplement(NODE_KX, NODE_KY, NODE_LX, NODE_LY)
-retMC = tSomDirectMC.runTSom2(teamMatchResultArray, teamMatchResultBinaryArray, COUNT)
+tSomDirectMCSide = lib.TSom2MissingComplement.TSom2MissingComplement(NODE_KX, NODE_KY, NODE_LX, NODE_LY)
+retMC = tSomDirectMCSide.runTSom2sideInfo(teamMatchResultArray, teamMatchResultBinaryArray,teamCompositionSideKArray, teamCompositionSideLArray ,COUNT)
 print("学習結果_retMC\n"+str(retMC))
 print("勝者ノードK\n")
-print(tSomDirectMC.win_nodeK)
+print(tSomDirectMCSide.win_nodeK)
 print("勝者ノードL\n")
-print(tSomDirectMC.win_nodeL)
+print(tSomDirectMCSide.win_nodeL)
+
+#データ書き込み
+#メインインスタンス
+file_open = open(PATH_RESULT_DATA_MAIN, 'w')
+dump = json.dumps(retMC, cls = lib.NumpyEncoder.NumpyEncoder)
+file_open.writelines(dump)
+file_open.close()
+
+#メインインスタンス
+file_open = open(PATH_RESULT_SIDE_NODE_K, 'w')
+dump = json.dumps(tSomDirectMCSide.lspYsideK_, cls = lib.NumpyEncoder.NumpyEncoder)
+file_open.writelines(dump)
+file_open.close()
+
+#メインインスタンス
+file_open = open(PATH_RESULT_SIDE_NODE_L, 'w')
+dump = json.dumps(tSomDirectMCSide.lspYsideL_, cls = lib.NumpyEncoder.NumpyEncoder)
+file_open.writelines(dump)
+file_open.close()
+
+#メインインスタンス
+file_open = open(PATH_RESULT_WINNER_NODE_K, 'w')
+dump = json.dumps(tSomDirectMCSide.win_nodeK, cls = lib.NumpyEncoder.NumpyEncoder)
+file_open.writelines(dump)
+file_open.close()
+
+#メインインスタンス
+file_open = open(PATH_RESULT_WINNER_NODE_L, 'w')
+dump = json.dumps(tSomDirectMCSide.win_nodeL, cls = lib.NumpyEncoder.NumpyEncoder)
+file_open.writelines(dump)
+file_open.close()
+print("main終わり")
