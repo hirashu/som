@@ -114,9 +114,11 @@ class TSom2MissingComplement(TSom2DirectType.TSom2DirectType):
       # 潜在空間の更新
       latent_spY_ = self.AdaptateProcessY(learn_rate_K, learn_rate_L, learnWeight, data, missingBinaryData)
 
-      #潜在空間（属性情報）の更新 TODO 修正
-      lspYsideK_= np.dot(learn_rate_K, sideDataNodeK)
-      lspYsideL_= np.dot(learn_rate_L, sideDataNodeL)
+      #潜在空間（属性情報）の更新(学習量の標準化 -> 更新)
+      learn_rate_K=self.LearnStandardization(learn_rate_K)
+      learn_rate_L=self.LearnStandardization(learn_rate_L)
+      self.lspYsideK_= self.AdaptateProcessSideInfo(learn_rate_K, sideDataNodeK)
+      self.lspYsideL_= self.AdaptateProcessSideInfo(learn_rate_L, sideDataNodeL) 
 
       count_+=1
       print(count_)
@@ -148,7 +150,7 @@ class TSom2MissingComplement(TSom2DirectType.TSom2DirectType):
         tmp = genFunc.Diff2Norm3DUseWinnerNode(data_n, latent_spY[index_k], winner_Lm)
         # todo サイド情報の重みを変更
         tmpSide = genFunc.Diff2Norm3D(sideDataNodeK[indexN],lspYsideK[index_k])
-        dist = dist + tmpSide
+        tmp = tmp + tmpSide
         if dist>=tmp:
           dist=tmp
           kn=index_k
@@ -157,7 +159,7 @@ class TSom2MissingComplement(TSom2DirectType.TSom2DirectType):
     return(winner_Kn)
 
   def WinnerNodeLDirectTypeSideInfo(self,data,latent_spY, sideDataNodeL, lspYsideL, winner_Kn):
-    """ Todo サイド情報を扱うように修正する
+    """
     勝者ノード(第２ノード)の選定(競合過程)を行う。勝者ノードとはデータから選出されたノードのことである。
     @param data         学習データ(N*M*D)  U2(K*M*D)
     @param latent_spY   潜在空間Y(K*L*D)
@@ -179,7 +181,7 @@ class TSom2MissingComplement(TSom2DirectType.TSom2DirectType):
         tmp = genFunc.Diff2Norm3DUseWinnerNode(data[:,index],latent_spY[:,index_l],winner_Kn)
         # todo サイド情報の重みを変更
         tmpSide = genFunc.Diff2Norm3D(sideDataNodeL[index],lspYsideL[index_l])
-        dist = dist + tmpSide
+        tmp = tmp + tmpSide
         if dist>tmp:
           dist = tmp
           lm = index_l
@@ -230,4 +232,21 @@ class TSom2MissingComplement(TSom2DirectType.TSom2DirectType):
     Y_normal =np.dot(Yl_std, CPretR_nodeK_winN.T)
     ret = learnWeight * Y_normal.T
     return ret
-  
+
+  def AdaptateProcessSideInfo(self, learnRateNode, sideData):
+    """
+    適応過程サイド(属性)情報
+    @param learnRateNode 標準化学習割合(第1ノード数(K) * 学習データの第1次元のデータ数(N or M))
+    @param sideData      サイド情報(データ数(N or M) * メンバー数(5固定) * データ次元(D))
+    @return 属性情報のインスタンスの学習結果(潜在空間のノード数(K or L) * メンバー数(5固定) * データ次元(D))
+    """
+    # [K(L)*M]*[N(M)*5*D]を以下の方法で行う
+    # 両方を転置し、最後に転置を行う。
+    # 1.([K(L)*M]_t*[N(M)*5*D]_t -> [D*5*N(M)] *[N(M) *K(L)])
+    # D次元ごとに更新値([5*N(M)]*[N(M)*K(L)]->[5*K(L)])を求め、[D*5*K(L)]を求める。
+    # 2.転置する事で変換([K(L)*5*D])させて求める。
+    learnRateNodeT = learnRateNode.T
+    Y_sideT = np.zeros((len(sideData.T), len(sideData[0]), len(learnRateNode)))
+    for index, sideDataT_n in enumerate(sideData.T):
+      Y_sideT[index]= np.dot(sideDataT_n, learnRateNodeT)
+    return Y_sideT.T
