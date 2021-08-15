@@ -23,7 +23,7 @@ PATH_RESULT_WINNER_NODE_K = './resultData/学習結果勝者K.json'
 PATH_RESULT_WINNER_NODE_L = './resultData/学習結果勝者L.json'
 
 # 定数定義
-COUNT = 300
+COUNT = 1
 #SOM用
 NODE_X = 10
 NODE_Y = 1
@@ -33,6 +33,9 @@ NODE_KX = 5 #エラーとなる
 NODE_KY = 5
 NODE_LX = 5
 NODE_LY = 5
+
+#モード切り替え
+IS_CREATE_DATA = True
 
 # 関数化（入力データ）
 #data形式はこれ（入力データは外部からインプットする）
@@ -81,6 +84,12 @@ dataB=np.array([[1,2],
                  [3,4]])
 
 
+if IS_CREATE_DATA:
+  #データの作成
+  createLearningData = lib.createLearningData.createLearningData()
+  createLearningData.createTeamData()
+  exit
+
 # データの読み込み
 teamMatchResult_open = open(PATH_DATA_TEAM_MATCH_RESULT, 'r')
 teamMatchResult = json.load(teamMatchResult_open)
@@ -123,25 +132,25 @@ dump = json.dumps(retMC, cls = lib.NumpyEncoder.NumpyEncoder)
 file_open.writelines(dump)
 file_open.close()
 
-#メインインスタンス
+#属性情報K
 file_open = open(PATH_RESULT_SIDE_NODE_K, 'w')
 dump = json.dumps(tSomDirectMCSide.lspYsideK_, cls = lib.NumpyEncoder.NumpyEncoder)
 file_open.writelines(dump)
 file_open.close()
 
-#メインインスタンス
+#属性情報L
 file_open = open(PATH_RESULT_SIDE_NODE_L, 'w')
 dump = json.dumps(tSomDirectMCSide.lspYsideL_, cls = lib.NumpyEncoder.NumpyEncoder)
 file_open.writelines(dump)
 file_open.close()
 
-#メインインスタンス
+#勝者ノードK
 file_open = open(PATH_RESULT_WINNER_NODE_K, 'w')
 dump = json.dumps(tSomDirectMCSide.win_nodeK, cls = lib.NumpyEncoder.NumpyEncoder)
 file_open.writelines(dump)
 file_open.close()
 
-#メインインスタンス
+#勝者ノードL
 file_open = open(PATH_RESULT_WINNER_NODE_L, 'w')
 dump = json.dumps(tSomDirectMCSide.win_nodeL, cls = lib.NumpyEncoder.NumpyEncoder)
 file_open.writelines(dump)

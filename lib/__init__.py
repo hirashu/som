@@ -6,3 +6,4 @@ from . import TSom2MissingComplement
 #from . import pca
 from . import generalFunction
 from . import NumpyEncoder
+from . import createLearningData
